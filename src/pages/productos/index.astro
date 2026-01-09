@@ -1,0 +1,64 @@
+---
+/**
+ * src/pages/productos/index.astro
+ * Listado de todos los productos (SSG)
+ */
+
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import ProductCard from '../../components/product/ProductCard.astro';
+import { supabaseClient } from '../../lib/supabase';
+
+// Obtener todos los productos activos
+const { data: allProducts } = await supabaseClient
+  .from('products')
+  .select('*')
+  .eq('is_active', true)
+  .order('created_at', { ascending: false });
+
+const products = allProducts || [];
+---
+
+<PublicLayout title="Productos - FashionMarket">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Header -->
+    <div class="mb-12">
+      <h1 class="font-serif text-4xl font-bold text-primary-800 mb-4">Catálogo Completo</h1>
+      <p class="text-lg text-neutral-gray_dark">
+        Descubre nuestra colección completa de moda masculina premium
+      </p>
+    </div>
+
+    <!-- Filter bar (placeholder para filtrado dinámico en futuro) -->
+    <div class="mb-8 pb-8 border-b border-primary-200 flex items-center justify-between">
+      <span class="text-sm text-neutral-gray_dark">
+        {products.length} productos disponibles
+      </span>
+      <div class="flex gap-4">
+        <button class="text-sm font-semibold text-primary-800 hover:text-primary-900">
+          Ordenar por: Relevancia
+        </button>
+      </div>
+    </div>
+
+    <!-- Products Grid -->
+    {products.length > 0 ? (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {products.map((product) => (
+          <ProductCard
+            id={product.id}
+            name={product.name}
+            slug={product.slug}
+            price={product.price_cents}
+            image={product.images?.[0]}
+            stock={product.stock}
+            featured={product.featured}
+          />
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-20 bg-neutral-gray_light rounded-sm">
+        <p class="text-neutral-gray_dark text-lg">No hay productos disponibles</p>
+      </div>
+    )}
+  </div>
+</PublicLayout>

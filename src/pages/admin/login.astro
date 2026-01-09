@@ -1,0 +1,83 @@
+---
+/**
+ * src/pages/admin/login.astro
+ * Página de login del admin (SSR)
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const error = Astro.url.searchParams.get('error');
+const message = Astro.url.searchParams.get('message');
+---
+
+<BaseLayout title="Admin Login - FashionMarket">
+  <div class="min-h-screen bg-gradient-to-br from-primary-800 to-primary-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div class="w-full max-w-md bg-neutral-white rounded-lg shadow-xl p-8">
+      <div class="text-center mb-8">
+        <h1 class="font-serif text-3xl font-bold text-primary-800 mb-2">
+          FashionMarket
+        </h1>
+        <p class="text-sm text-neutral-gray_dark">Panel Administrativo</p>
+      </div>
+
+      {error && (
+        <div class="mb-6 p-4 bg-red-50 text-red-700 rounded-sm text-sm border border-red-200">
+          {error === 'invalid' && 'Email o contraseña incorrectos'}
+          {error !== 'invalid' && error}
+        </div>
+      )}
+
+      {message && (
+        <div class="mb-6 p-4 bg-green-50 text-green-700 rounded-sm text-sm border border-green-200">
+          {message}
+        </div>
+      )}
+
+      <form method="POST" action="/api/admin/login" class="space-y-6">
+        <div>
+          <label for="email" class="block text-sm font-semibold text-primary-800 mb-2">
+            Correo Electrónico
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            placeholder="admin@fashionmarket.com"
+            class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+          />
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-semibold text-primary-800 mb-2">
+            Contraseña
+          </label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            placeholder="••••••••"
+            class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="w-full py-2 bg-primary-800 text-neutral-white font-semibold rounded-sm hover:bg-primary-900 transition focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2"
+        >
+          Iniciar Sesión
+        </button>
+      </form>
+
+      <div class="mt-8 pt-8 border-t border-primary-200 text-center">
+        <p class="text-xs text-neutral-gray_dark">
+          ¿Olvidaste tu contraseña?{' '}
+          <a href="#" class="text-primary-800 font-semibold hover:text-primary-900">
+            Recupérala aquí
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

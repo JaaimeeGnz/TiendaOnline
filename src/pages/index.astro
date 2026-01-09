@@ -1,0 +1,104 @@
+---
+/**
+ * src/pages/index.astro
+ * Homepage de la tienda
+ */
+
+import PublicLayout from '../layouts/PublicLayout.astro';
+import ProductCard from '../components/product/ProductCard.astro';
+import { supabaseClient } from '../lib/supabase';
+
+// Obtener productos destacados (SSG - generado en build time)
+const { data: featuredProducts } = await supabaseClient
+  .from('products')
+  .select('*')
+  .eq('featured', true)
+  .eq('is_active', true)
+  .limit(8);
+
+const products = featuredProducts || [];
+---
+
+<PublicLayout title="FashionMarket - Moda Masculina Premium">
+  <!-- Hero Section -->
+  <section class="relative bg-gradient-to-br from-primary-800 to-primary-900 text-neutral-white min-h-screen flex items-center justify-center">
+    <div class="absolute inset-0 opacity-10">
+      <div
+        class="absolute top-0 right-0 w-96 h-96 bg-accent-gold rounded-full mix-blend-multiply blur-3xl"
+      ></div>
+    </div>
+
+    <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h1 class="font-serif text-5xl sm:text-7xl font-bold mb-6 leading-tight">
+        Minimalismo Sofisticado
+      </h1>
+      <p class="text-xl sm:text-2xl text-neutral-gray_light mb-8 font-light">
+        Descubre nuestra colección de moda masculina premium. Cada pieza cuidadosamente
+        seleccionada para el hombre moderno.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a
+          href="/productos"
+          class="px-8 py-4 bg-accent-gold text-primary-800 font-serif font-bold text-lg rounded-sm hover:bg-accent-gold_muted transition transform hover:scale-105"
+        >
+          Explorar Catálogo
+        </a>
+        <a
+          href="#featured"
+          class="px-8 py-4 border-2 border-neutral-white text-neutral-white font-serif font-bold text-lg rounded-sm hover:bg-neutral-white hover:text-primary-800 transition"
+        >
+          Ver Destacados
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Products Section -->
+  <section id="featured" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div class="text-center mb-12">
+      <h2 class="font-serif text-4xl font-bold text-primary-800 mb-4">Prendas Destacadas</h2>
+      <p class="text-lg text-neutral-gray_dark">
+        Nuestras selecciones más exclusivas esta temporada
+      </p>
+    </div>
+
+    {products.length > 0 ? (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {products.map((product) => (
+          <ProductCard
+            id={product.id}
+            name={product.name}
+            slug={product.slug}
+            price={product.price_cents}
+            image={product.images?.[0]}
+            stock={product.stock}
+            featured={true}
+          />
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-12 bg-neutral-gray_light rounded-sm">
+        <p class="text-neutral-gray_dark">No hay productos destacados disponibles</p>
+      </div>
+    )}
+  </section>
+
+  <!-- Call to Action Section -->
+  <section class="bg-primary-50 py-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="font-serif text-3xl font-bold text-primary-800 mb-4">
+        Elegancia y Exclusividad
+      </h2>
+      <p class="text-lg text-neutral-gray_dark mb-8">
+        Nuestras prendas son confeccionadas con los mejores materiales y diseños que reflejan
+        tu estilo único y sofisticado.
+      </p>
+      <a
+        href="/productos"
+        class="inline-flex px-8 py-3 bg-primary-800 text-neutral-white font-semibold rounded-sm hover:bg-primary-900 transition"
+      >
+        Ver todo el catálogo
+      </a>
+    </div>
+  </section>
+</PublicLayout>

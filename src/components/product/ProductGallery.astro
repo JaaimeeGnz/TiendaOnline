@@ -1,0 +1,90 @@
+---
+/**
+ * ProductGallery.astro
+ * Galería de imágenes del producto
+ */
+
+interface Props {
+  images?: string[];
+  productName: string;
+}
+
+const { images = [], productName } = Astro.props;
+
+const mainImage = images[0];
+const thumbnails = images.slice(0, 4); // Máximo 4 miniaturas
+---
+
+<div class="space-y-4">
+  <!-- Imagen principal -->
+  <div
+    class="relative w-full bg-neutral-gray_light rounded-sm overflow-hidden"
+    style="aspect-ratio: 1 / 1"
+  >
+    {mainImage ? (
+      <img
+        id="main-image"
+        src={mainImage}
+        alt={productName}
+        class="w-full h-full object-cover"
+      />
+    ) : (
+      <div class="w-full h-full flex items-center justify-center bg-neutral-gray_medium">
+        <span class="text-neutral-gray_dark">No hay imagen disponible</span>
+      </div>
+    )}
+  </div>
+
+  <!-- Miniaturas -->
+  {thumbnails.length > 1 && (
+    <div class="grid grid-cols-4 gap-2">
+      {thumbnails.map((thumb, index) => (
+        <button
+          data-index={index}
+          class={`relative rounded-sm overflow-hidden cursor-pointer border-2 transition ${
+            index === 0 ? 'border-primary-800' : 'border-neutral-gray_light hover:border-primary-400'
+          }`}
+          aria-label={`Ver imagen ${index + 1}`}
+        >
+          <img
+            src={thumb}
+            alt={`${productName} - Imagen ${index + 1}`}
+            class="w-full h-full object-cover"
+          />
+        </button>
+      ))}
+    </div>
+  )}
+</div>
+
+<script>
+  // Cambiar imagen principal al hacer click en miniaturas
+  const mainImage = document.getElementById('main-image');
+  const thumbnailButtons = document.querySelectorAll('[data-index]');
+
+  thumbnailButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const indexStr = button.getAttribute('data-index');
+      const index = indexStr ? parseInt(indexStr, 10) : -1;
+      if (index < 0) return;
+      
+      const images = document.querySelectorAll('[data-index] img');
+      const imageElement = images[index] as HTMLImageElement | undefined;
+
+      if (mainImage && imageElement) {
+        const newSrc = imageElement.getAttribute('src');
+        if (newSrc) {
+          (mainImage as HTMLImageElement).src = newSrc;
+        }
+      }
+
+      // Actualizar bordes
+      thumbnailButtons.forEach((btn) => {
+        btn.classList.remove('border-primary-800');
+        btn.classList.add('border-neutral-gray_light');
+      });
+      button.classList.remove('border-neutral-gray_light');
+      button.classList.add('border-primary-800');
+    });
+  });
+</script>

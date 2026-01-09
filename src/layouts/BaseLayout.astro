@@ -1,0 +1,107 @@
+---
+/**
+ * BaseLayout.astro
+ * Layout base con HTML common, meta tags, y scripts globales
+ */
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+}
+
+const {
+  title = 'FashionMarket - Moda Masculina Premium',
+  description = 'Descubre nuestra colección de moda masculina de lujo. Ropa premium con diseño sofisticado.',
+  ogImage = '/og-image.png',
+} = Astro.props;
+
+const siteUrl = import.meta.env.PUBLIC_SITE_URL;
+---
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#1e293b" />
+
+    <!-- OpenGraph -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={`${siteUrl}${ogImage}`} />
+    <meta property="og:type" content="website" />
+
+    <!-- Tipografías -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>{title}</title>
+  </head>
+  <body class="bg-neutral-white text-neutral-black font-sans">
+    <slot />
+
+    <!-- Scripts globales -->
+    <script>
+      // Verificar soporte de localStorage
+      if (typeof localStorage === 'undefined') {
+        console.warn('localStorage no disponible');
+      }
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
+  }
+
+  /* Optimizaciones de fuentes */
+  @font-face {
+    font-family: 'Playfair Display';
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* Estilos de scrollbar personalizados */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+</style>

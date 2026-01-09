@@ -1,0 +1,198 @@
+---
+/**
+ * src/pages/productos/[slug].astro
+ * Página de detalle de producto (SSG)
+ */
+
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import ProductGallery from '../../components/product/ProductGallery.astro';
+import AddToCartButton from '../../components/islands/AddToCartButton';
+import { supabaseClient } from '../../lib/supabase';
+import { formatPrice } from '../../lib/utils';
+
+// Obtener todos los productos para generar rutas estáticas
+export async function getStaticPaths() {
+  const { data: products } = await supabaseClient
+    .from('products')
+    .select('slug')
+    .eq('is_active', true);
+
+  return (products || []).map((prod) => ({
+    params: { slug: prod.slug },
+  }));
+}
+
+// Obtener slug del URL
+const { slug } = Astro.params;
+
+// Obtener producto
+const { data: product } = await supabaseClient
+  .from('products')
+  .select('*')
+  .eq('slug', slug)
+  .eq('is_active', true)
+  .single();
+
+if (!product) {
+  return Astro.redirect('/404');
+}
+
+// Obtener categoría
+const { data: category } = await supabaseClient
+  .from('categories')
+  .select('*')
+  .eq('id', product.category_id)
+  .single();
+
+const selectedSize = 'M';
+---
+
+<PublicLayout
+  title={`${product.name} - FashionMarket`}
+  description={product.description}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 mb-8 text-sm text-neutral-gray_dark">
+      <a href="/" class="hover:text-primary-800">Inicio</a>
+      <span>/</span>
+      <a href="/productos" class="hover:text-primary-800">Productos</a>
+      <span>/</span>
+      {category && (
+        <>
+          <a href={`/categoria/${category.slug}`} class="hover:text-primary-800">
+            {category.name}
+          </a>
+          <span>/</span>
+        </>
+      )}
+      <span class="text-primary-800 font-semibold">{product.name}</span>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <!-- Galería de imágenes -->
+      <div>
+        <ProductGallery images={product.images} productName={product.name} />
+      </div>
+
+      <!-- Detalles del producto -->
+      <div class="space-y-8">
+        <!-- Nombre y precio -->
+        <div>
+          <div class="flex items-center gap-4 mb-3">
+            {category && (
+              <a
+                href={`/categoria/${category.slug}`}
+                class="text-xs font-semibold text-primary-600 uppercase tracking-wider hover:text-primary-800"
+              >
+                {category.name}
+              </a>
+            )}
+            {product.featured && (
+              <span class="text-xs font-bold text-accent-gold uppercase">DESTACADO</span>
+            )}
+          </div>
+          <h1 class="font-serif text-4xl font-bold text-primary-800 mb-4">
+            {product.name}
+          </h1>
+          <p class="text-3xl font-bold text-neutral-gray_dark">
+            {formatPrice(product.price_cents)}
+          </p>
+        </div>
+
+        <!-- Estado de stock -->
+        <div
+          class={`p-4 rounded-sm text-sm font-semibold ${
+            product.stock > 0
+              ? 'bg-green-50 text-green-700'
+              : 'bg-red-50 text-red-700'
+          }`}
+        >
+          {product.stock > 0
+            ? `${product.stock} unidades en stock`
+            : 'Agotado'}
+        </div>
+
+        <!-- Descripción -->
+        <div>
+          <h2 class="font-serif text-lg font-bold text-primary-800 mb-3">
+            Descripción
+          </h2>
+          <p class="text-neutral-gray_dark leading-relaxed">
+            {product.description}
+          </p>
+        </div>
+
+        <!-- Características -->
+        {(product.material || product.color || product.sizes) && (
+          <div>
+            <h2 class="font-serif text-lg font-bold text-primary-800 mb-3">
+              Características
+            </h2>
+            <ul class="space-y-2 text-sm text-neutral-gray_dark">
+              {product.material && <li><strong>Material:</strong> {product.material}</li>}
+              {product.color && <li><strong>Color:</strong> {product.color}</li>}
+              {product.sizes && (
+                <li><strong>Tallas:</strong> {product.sizes.join(', ')}</li>
+              )}
+            </ul>
+          </div>
+        )}
+
+        <!-- Selector de talla y botón de compra -->
+        <div class="space-y-4">
+          <div>
+            <label for="size" class="block text-sm font-semibold text-primary-800 mb-2">
+              Seleccionar talla:
+            </label>
+            <select
+              id="size"
+              class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800"
+            >
+              <option value="">-- Elige una talla --</option>
+              {product.sizes?.map((size: string) => (
+                <option value={size}>{size}</option>
+              ))}
+            </select>
+          </div>
+
+          <!-- Botón Añadir al Carrito (isla React) -->
+          <AddToCartButton
+            client:load
+            productId={product.id}
+            productName={product.name}
+            productSlug={product.slug}
+            price={product.price_cents}
+            stock={product.stock}
+            selectedSize={selectedSize}
+            imageUrl={product.images?.[0]}
+          />
+        </div>
+
+        <!-- Información adicional -->
+        <div class="pt-8 border-t border-primary-200 space-y-4 text-sm text-neutral-gray_dark">
+          <p>
+            <strong>SKU:</strong> {product.sku || 'N/A'}
+          </p>
+          <p>
+            Envíos rápidos y devoluciones gratuitas en 30 días.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</PublicLayout>
+
+<script define:vars={{ sizes: product.sizes || [] }}>
+  const sizeSelect = document.getElementById('size');
+  if (sizeSelect && sizes.length > 0) {
+    // Set the first size as selected
+    sizeSelect.value = sizes[0];
+
+    // Update the AddToCartButton's selectedSize
+    sizeSelect.addEventListener('change', (e) => {
+      // This would be handled by React component in real scenario
+      console.log('Size changed to:', e.target.value);
+    });
+  }
+</script>

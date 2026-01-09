@@ -1,0 +1,101 @@
+---
+/**
+ * src/pages/categoria/[slug].astro
+ * Página de listado por categoría (SSG)
+ */
+
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import ProductCard from '../../components/product/ProductCard.astro';
+import { supabaseClient } from '../../lib/supabase';
+
+// Obtener todas las categorías para generar rutas estáticas
+export async function getStaticPaths() {
+  const { data: categories } = await supabaseClient
+    .from('categories')
+    .select('slug')
+    .eq('is_active', true);
+
+  return (categories || []).map((cat) => ({
+    params: { slug: cat.slug },
+  }));
+}
+
+const { slug } = Astro.params;
+
+// Obtener categoría
+const { data: category } = await supabaseClient
+  .from('categories')
+  .select('*')
+  .eq('slug', slug)
+  .single();
+
+if (!category) {
+  return Astro.redirect('/404');
+}
+
+// Obtener productos de la categoría
+const { data: products } = await supabaseClient
+  .from('products')
+  .select('*')
+  .eq('category_id', category.id)
+  .eq('is_active', true)
+  .order('featured', { ascending: false });
+---
+
+<PublicLayout
+  title={`${category.name} - FashionMarket`}
+  description={category.description}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 mb-8 text-sm text-neutral-gray_dark">
+      <a href="/" class="hover:text-primary-800">Inicio</a>
+      <span>/</span>
+      <a href="/productos" class="hover:text-primary-800">Productos</a>
+      <span>/</span>
+      <span class="text-primary-800 font-semibold">{category.name}</span>
+    </nav>
+
+    <!-- Header -->
+    <div class="mb-12">
+      <h1 class="font-serif text-4xl font-bold text-primary-800 mb-3">
+        {category.name}
+      </h1>
+      {category.description && (
+        <p class="text-lg text-neutral-gray_dark max-w-2xl">
+          {category.description}
+        </p>
+      )}
+    </div>
+
+    <!-- Filter bar -->
+    <div class="mb-8 pb-8 border-b border-primary-200 flex items-center justify-between">
+      <span class="text-sm text-neutral-gray_dark">
+        {products?.length || 0} productos disponibles
+      </span>
+    </div>
+
+    <!-- Products Grid -->
+    {products && products.length > 0 ? (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {products.map((product) => (
+          <ProductCard
+            id={product.id}
+            name={product.name}
+            slug={product.slug}
+            price={product.price_cents}
+            image={product.images?.[0]}
+            stock={product.stock}
+            featured={product.featured}
+          />
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-20 bg-neutral-gray_light rounded-sm">
+        <p class="text-neutral-gray_dark text-lg">
+          No hay productos en esta categoría
+        </p>
+      </div>
+    )}
+  </div>
+</PublicLayout>

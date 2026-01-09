@@ -1,0 +1,182 @@
+---
+/**
+ * PublicLayout.astro
+ * Layout para la tienda pública con header y footer
+ */
+
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header
+      class="sticky top-0 z-40 bg-neutral-white border-b border-primary-200 shadow-sm"
+    >
+      <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <!-- Logo -->
+        <div class="flex-shrink-0">
+          <a href="/" class="font-serif text-2xl font-bold text-primary-800 hover:text-primary-900">
+            FashionMarket
+          </a>
+        </div>
+
+        <!-- Navegación Central -->
+        <div class="hidden md:flex items-center gap-8">
+          <a href="/productos" class="text-sm text-neutral-gray_dark hover:text-primary-800 transition">
+            Catálogo
+          </a>
+          <a href="/categoria/camisas" class="text-sm text-neutral-gray_dark hover:text-primary-800 transition">
+            Camisas
+          </a>
+          <a href="/categoria/pantalones" class="text-sm text-neutral-gray_dark hover:text-primary-800 transition">
+            Pantalones
+          </a>
+          <a href="/categoria/trajes" class="text-sm text-neutral-gray_dark hover:text-primary-800 transition">
+            Trajes
+          </a>
+        </div>
+
+        <!-- Carrito -->
+        <div class="flex items-center gap-4">
+          <button
+            id="cart-toggle"
+            class="relative p-2 text-neutral-gray_dark hover:text-primary-800 transition"
+            aria-label="Abrir carrito de compras"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+              />
+            </svg>
+            <span
+              id="cart-count"
+              class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
+            >
+              0
+            </span>
+          </button>
+
+          <!-- Admin link -->
+          <a
+            href="/admin"
+            class="hidden sm:inline-flex px-4 py-2 text-xs font-semibold text-primary-800 border border-primary-800 rounded hover:bg-primary-50 transition"
+          >
+            Admin
+          </a>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Main content -->
+    <main class="flex-grow">
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-primary-800 text-neutral-white mt-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <!-- About -->
+          <div>
+            <h3 class="font-serif text-lg mb-4">FashionMarket</h3>
+            <p class="text-sm text-neutral-gray_light">
+              Moda masculina premium con diseño sofisticado. Cada prenda cuidadosamente
+              seleccionada.
+            </p>
+          </div>
+
+          <!-- Links -->
+          <div>
+            <h4 class="font-semibold text-sm mb-4">Tienda</h4>
+            <ul class="space-y-2 text-sm text-neutral-gray_light">
+              <li><a href="/productos" class="hover:text-neutral-white transition">Todos</a></li>
+              <li><a href="/categoria/camisas" class="hover:text-neutral-white transition">Camisas</a></li>
+              <li>
+                <a
+                  href="/categoria/pantalones"
+                  class="hover:text-neutral-white transition"
+                >
+                  Pantalones
+                </a>
+              </li>
+              <li><a href="/categoria/trajes" class="hover:text-neutral-white transition">Trajes</a></li>
+            </ul>
+          </div>
+
+          <!-- Customer -->
+          <div>
+            <h4 class="font-semibold text-sm mb-4">Atención al Cliente</h4>
+            <ul class="space-y-2 text-sm text-neutral-gray_light">
+              <li><a href="#" class="hover:text-neutral-white transition">Contacto</a></li>
+              <li><a href="#" class="hover:text-neutral-white transition">Envíos</a></li>
+              <li><a href="#" class="hover:text-neutral-white transition">Devoluciones</a></li>
+            </ul>
+          </div>
+
+          <!-- Legal -->
+          <div>
+            <h4 class="font-semibold text-sm mb-4">Legal</h4>
+            <ul class="space-y-2 text-sm text-neutral-gray_light">
+              <li><a href="#" class="hover:text-neutral-white transition">Términos</a></li>
+              <li><a href="#" class="hover:text-neutral-white transition">Privacidad</a></li>
+              <li><a href="#" class="hover:text-neutral-white transition">Cookies</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="border-t border-primary-700 pt-8 text-center text-sm text-neutral-gray_light">
+          <p>&copy; 2026 FashionMarket. Todos los derechos reservados.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <div id="cart-overlay" class="hidden fixed inset-0 z-50 bg-black/50"></div>
+  <div
+    id="cart-sidebar"
+    class="fixed right-0 top-0 h-full w-full max-w-md bg-neutral-white shadow-lg z-50 flex flex-col transform transition-transform duration-300 translate-x-full"
+  >
+    <!-- Placeholder para carrito - será reemplazado con componente -->
+  </div>
+
+  <script>
+    // Listener para el toggle del carrito
+    const cartToggle = document.getElementById('cart-toggle');
+    const cartSidebar = document.getElementById('cart-sidebar');
+    const cartOverlay = document.getElementById('cart-overlay');
+
+    if (cartToggle && cartSidebar && cartOverlay) {
+      const toggleCart = () => {
+        cartSidebar.classList.toggle('hidden');
+        cartOverlay.classList.toggle('hidden');
+        cartSidebar.classList.toggle('translate-x-full');
+      };
+
+      cartToggle.addEventListener('click', toggleCart);
+      cartOverlay.addEventListener('click', toggleCart);
+
+      // Cerrar con ESC
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !cartSidebar.classList.contains('hidden')) {
+          toggleCart();
+        }
+      });
+    }
+  </script>
+</BaseLayout>

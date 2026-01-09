@@ -1,0 +1,80 @@
+---
+/**
+ * ProductCard.astro
+ * Tarjeta de producto para el listado
+ */
+
+import { formatPrice } from '../../lib/utils';
+
+interface Props {
+  id: string;
+  name: string;
+  slug: string;
+  price: number; // en céntimos
+  image?: string;
+  stock: number;
+  featured?: boolean;
+}
+
+const { id, name, slug, price, image, stock, featured = false } = Astro.props;
+
+const inStock = stock > 0;
+const isLowStock = stock > 0 && stock <= 5;
+---
+
+<a href={`/productos/${slug}`} class="group">
+  <div
+    class={`relative overflow-hidden rounded-sm bg-neutral-gray_light aspect-square ${featured ? 'ring-2 ring-accent-gold' : ''}`}
+  >
+    {image ? (
+      <img
+        src={image}
+        alt={name}
+        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        loading="lazy"
+      />
+    ) : (
+      <div class="w-full h-full bg-neutral-gray_medium flex items-center justify-center">
+        <span class="text-neutral-gray_dark text-sm">Sin imagen</span>
+      </div>
+    )}
+
+    {!inStock && (
+      <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+        <span class="text-neutral-white font-serif text-lg font-bold">Agotado</span>
+      </div>
+    )}
+
+    {featured && (
+      <div class="absolute top-3 right-3 bg-accent-gold text-primary-800 px-2 py-1 text-xs font-bold rounded-sm">
+        DESTACADO
+      </div>
+    )}
+  </div>
+
+  <div class="mt-4 space-y-2">
+    <h3 class="font-serif text-lg text-primary-800 group-hover:text-primary-900 transition">
+      {name}
+    </h3>
+
+    <div class="flex items-center justify-between">
+      <span class="text-lg font-semibold text-neutral-gray_dark">
+        {formatPrice(price)}
+      </span>
+
+      {isLowStock && (
+        <span class="text-xs font-semibold text-amber-600 uppercase">
+          {stock} disponibles
+        </span>
+      )}
+    </div>
+
+    <div class="text-xs text-neutral-gray_dark">
+      {inStock ? (
+        <span class="text-green-600 font-semibold">En stock</span>
+      ) : (
+        <span class="text-red-600 font-semibold">Agotado</span>
+      )}
+    </div>
+  </div>
+</a>
