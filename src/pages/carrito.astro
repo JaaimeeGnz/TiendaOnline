@@ -1,0 +1,340 @@
+---
+/**
+ * src/pages/carrito.astro
+ * Página del carrito de compras estilo JD Sports
+ */
+
+import PublicLayout from "../layouts/PublicLayout.astro";
+---
+
+<PublicLayout title="Tu Carrito - JGMarket">
+    <div class="bg-jd-gray min-h-screen">
+        <div class="max-w-6xl mx-auto px-4 py-8">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <h1
+                    class="text-2xl md:text-3xl font-black text-jd-black uppercase"
+                >
+                    Tu Carrito
+                </h1>
+                <button
+                    id="clear-cart-btn"
+                    class="text-sm text-jd-red font-bold hover:underline hidden"
+                >
+                    Vaciar carrito
+                </button>
+            </div>
+
+            <!-- Cart Content -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Cart Items -->
+                <div class="lg:col-span-2">
+                    <!-- Empty State -->
+                    <div
+                        id="cart-empty"
+                        class="bg-white rounded p-12 text-center"
+                    >
+                        <svg
+                            class="w-20 h-20 mx-auto text-gray-300 mb-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1"
+                                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                            ></path>
+                        </svg>
+                        <h3 class="text-xl font-bold text-jd-black mb-2">
+                            Tu carrito está vacío
+                        </h3>
+                        <p class="text-gray-500 mb-6">
+                            ¡Añade productos para empezar!
+                        </p>
+                        <a
+                            href="/productos"
+                            class="inline-block px-8 py-3 bg-jd-turquoise text-white font-bold uppercase text-sm hover:bg-opacity-90 transition"
+                        >
+                            Explorar Productos
+                        </a>
+                    </div>
+
+                    <!-- Cart Items List -->
+                    <div id="cart-items-list" class="hidden space-y-4">
+                        <!-- Items will be rendered here by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Cart Summary -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded p-6 sticky top-24">
+                        <h3
+                            class="font-bold text-lg uppercase mb-4 pb-4 border-b border-gray-200"
+                        >
+                            Resumen
+                        </h3>
+
+                        <div class="space-y-3 mb-6">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Subtotal</span>
+                                <span id="cart-subtotal" class="font-bold"
+                                    >€0.00</span
+                                >
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Envío</span>
+                                <span
+                                    id="cart-shipping"
+                                    class="font-bold text-jd-turquoise"
+                                    >GRATIS</span
+                                >
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-200 mb-6">
+                            <div class="flex justify-between">
+                                <span class="font-bold text-lg">Total</span>
+                                <span
+                                    id="cart-total"
+                                    class="font-bold text-lg text-jd-red"
+                                    >€0.00</span
+                                >
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">
+                                IVA incluido
+                            </p>
+                        </div>
+
+                        <button
+                            id="checkout-btn"
+                            disabled
+                            class="w-full py-4 bg-jd-turquoise text-white font-bold uppercase text-sm hover:bg-opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Proceder al Pago
+                        </button>
+
+                        <div class="mt-4 text-center">
+                            <a
+                                href="/productos"
+                                class="text-sm text-jd-black font-bold hover:text-jd-red transition"
+                            >
+                                ← Continuar comprando
+                            </a>
+                        </div>
+
+                        <!-- Payment Methods -->
+                        <div class="mt-6 pt-6 border-t border-gray-200">
+                            <p class="text-xs text-gray-500 uppercase mb-2">
+                                Métodos de pago:
+                            </p>
+                            <div class="flex items-center gap-2">
+                                <div
+                                    class="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold"
+                                >
+                                    VISA
+                                </div>
+                                <div
+                                    class="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold"
+                                >
+                                    MC
+                                </div>
+                                <div
+                                    class="w-10 h-6 bg-blue-100 rounded flex items-center justify-center text-xs font-bold text-blue-600"
+                                >
+                                    PP
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cart functionality
+        const CART_KEY = "jgmarket-cart";
+
+        interface CartItem {
+            id: string;
+            name: string;
+            price: number;
+            image?: string;
+            quantity: number;
+            size?: string;
+        }
+
+        function getCart(): CartItem[] {
+            const stored = localStorage.getItem(CART_KEY);
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        function saveCart(cart: CartItem[]): void {
+            localStorage.setItem(CART_KEY, JSON.stringify(cart));
+            updateCartUI();
+            updateHeaderCartCount();
+        }
+
+        function updateHeaderCartCount(): void {
+            const cart = getCart();
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const countEl = document.getElementById("cart-count");
+            if (countEl) countEl.textContent = count.toString();
+        }
+
+        function updateCartUI(): void {
+            const cart = getCart();
+            const emptyEl = document.getElementById("cart-empty");
+            const listEl = document.getElementById("cart-items-list");
+            const clearBtn = document.getElementById("clear-cart-btn");
+            const checkoutBtn = document.getElementById(
+                "checkout-btn",
+            ) as HTMLButtonElement;
+
+            if (cart.length === 0) {
+                emptyEl?.classList.remove("hidden");
+                listEl?.classList.add("hidden");
+                clearBtn?.classList.add("hidden");
+                if (checkoutBtn) checkoutBtn.disabled = true;
+            } else {
+                emptyEl?.classList.add("hidden");
+                listEl?.classList.remove("hidden");
+                clearBtn?.classList.remove("hidden");
+                if (checkoutBtn) checkoutBtn.disabled = false;
+                renderCartItems(cart);
+            }
+
+            updateTotals(cart);
+        }
+
+        function renderCartItems(cart: CartItem[]): void {
+            const listEl = document.getElementById("cart-items-list");
+            if (!listEl) return;
+
+            listEl.innerHTML = cart
+                .map(
+                    (item, index) => `
+        <div class="bg-white rounded p-4 flex gap-4" data-index="${index}">
+          <div class="w-24 h-24 bg-jd-gray rounded overflow-hidden flex-shrink-0">
+            ${
+                item.image
+                    ? `<img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover"/>`
+                    : `<div class="w-full h-full flex items-center justify-center text-gray-400">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                </div>`
+            }
+          </div>
+          <div class="flex-1">
+            <h4 class="font-bold text-jd-black">${item.name}</h4>
+            ${item.size ? `<p class="text-sm text-gray-500">Talla: ${item.size}</p>` : ""}
+            <p class="font-bold text-jd-red mt-1">€${(item.price / 100).toFixed(2)}</p>
+          </div>
+          <div class="flex flex-col items-end justify-between">
+            <button class="remove-item text-gray-400 hover:text-jd-red transition" data-index="${index}">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+            <div class="flex items-center gap-2 border border-gray-200 rounded">
+              <button class="qty-minus px-3 py-1 text-gray-600 hover:text-jd-black transition" data-index="${index}">−</button>
+              <span class="qty-value w-8 text-center font-bold">${item.quantity}</span>
+              <button class="qty-plus px-3 py-1 text-gray-600 hover:text-jd-black transition" data-index="${index}">+</button>
+            </div>
+          </div>
+        </div>
+      `,
+                )
+                .join("");
+
+            // Add event listeners
+            listEl.querySelectorAll(".remove-item").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    const index = parseInt(
+                        (e.currentTarget as HTMLElement).dataset.index || "0",
+                    );
+                    removeItem(index);
+                });
+            });
+
+            listEl.querySelectorAll(".qty-minus").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    const index = parseInt(
+                        (e.currentTarget as HTMLElement).dataset.index || "0",
+                    );
+                    updateQuantity(index, -1);
+                });
+            });
+
+            listEl.querySelectorAll(".qty-plus").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    const index = parseInt(
+                        (e.currentTarget as HTMLElement).dataset.index || "0",
+                    );
+                    updateQuantity(index, 1);
+                });
+            });
+        }
+
+        function removeItem(index: number): void {
+            const cart = getCart();
+            cart.splice(index, 1);
+            saveCart(cart);
+        }
+
+        function updateQuantity(index: number, delta: number): void {
+            const cart = getCart();
+            if (cart[index]) {
+                cart[index].quantity = Math.max(
+                    1,
+                    cart[index].quantity + delta,
+                );
+                saveCart(cart);
+            }
+        }
+
+        function updateTotals(cart: CartItem[]): void {
+            const subtotal = cart.reduce(
+                (sum, item) => sum + item.price * item.quantity,
+                0,
+            );
+            const subtotalEl = document.getElementById("cart-subtotal");
+            const totalEl = document.getElementById("cart-total");
+            const headerTotalEl = document.getElementById("cart-total");
+
+            if (subtotalEl)
+                subtotalEl.textContent = `€${(subtotal / 100).toFixed(2)}`;
+            if (totalEl)
+                totalEl.textContent = `€${(subtotal / 100).toFixed(2)}`;
+        }
+
+        function clearCart(): void {
+            localStorage.removeItem(CART_KEY);
+            updateCartUI();
+            updateHeaderCartCount();
+        }
+
+        // Initialize
+        document.addEventListener("DOMContentLoaded", () => {
+            updateCartUI();
+            updateHeaderCartCount();
+
+            const clearBtn = document.getElementById("clear-cart-btn");
+            clearBtn?.addEventListener("click", () => {
+                if (
+                    confirm("¿Estás seguro de que quieres vaciar el carrito?")
+                ) {
+                    clearCart();
+                }
+            });
+
+            const checkoutBtn = document.getElementById("checkout-btn");
+            checkoutBtn?.addEventListener("click", () => {
+                alert("¡Función de checkout próximamente!");
+            });
+        });
+    </script>
+</PublicLayout>

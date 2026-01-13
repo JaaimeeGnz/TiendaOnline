@@ -1,10 +1,10 @@
 ---
 /**
  * PublicLayout.astro
- * Layout para la tienda pública con header y footer
+ * Layout para la tienda pública con estilo JG Sports
  */
 
-import BaseLayout from './BaseLayout.astro';
+import BaseLayout from "./BaseLayout.astro";
 
 interface Props {
   title?: string;
@@ -15,41 +15,45 @@ const { title, description } = Astro.props;
 ---
 
 <BaseLayout title={title} description={description}>
-  <div class="min-h-screen flex flex-col">
-    <!-- Header -->
-    <header
-      class="sticky top-0 z-40 bg-neutral-white border-b border-primary-200 shadow-sm"
-    >
-      <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        <!-- Logo -->
-        <div class="flex-shrink-0">
-          <a href="/" class="font-serif text-2xl font-bold text-primary-800 hover:text-primary-900">
-            FashionMarket
-          </a>
+  <div class="min-h-screen flex flex-col bg-jd-gray">
+    <!-- Top Bar (Negro) -->
+    <div class="bg-jd-black text-white text-xs">
+      <div
+        class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between"
+      >
+        <div class="hidden md:flex items-center gap-6">
+          <a href="/contacto" class="hover:text-jd-turquoise transition"
+            >Ayuda</a
+          >
+          <a href="#" class="hover:text-jd-turquoise transition"
+            >Localizar pedido</a
+          >
+          <a href="#" class="hover:text-jd-turquoise transition"
+            >Buscador de tiendas</a
+          >
         </div>
-
-        <!-- Navegación Central -->
-        <div class="hidden md:flex items-center gap-8">
-          <a href="/productos" class="text-sm text-neutral-gray_dark hover:text-primary-800 transition">
-            Catálogo
-          </a>
-          <a href="/categoria/camisas" class="text-sm text-neutral-gray_dark hover:text-primary-800 transition">
-            Camisas
-          </a>
-          <a href="/categoria/pantalones" class="text-sm text-neutral-gray_dark hover:text-primary-800 transition">
-            Pantalones
-          </a>
-          <a href="/categoria/trajes" class="text-sm text-neutral-gray_dark hover:text-primary-800 transition">
-            Trajes
-          </a>
+        <div class="flex items-center gap-6 ml-auto">
+          <a href="/auth" class="hover:text-jd-turquoise transition"
+            >Mi cuenta</a
+          >
+          {Astro.locals.user && (
+            <a href="/api/auth/logout" class="hover:text-jd-turquoise transition"
+              >Cerrar Sesión</a
+            >
+          )}
         </div>
+      </div>
+    </div>
 
-        <!-- Carrito -->
-        <div class="flex items-center gap-4">
+    <!-- Main Header -->
+    <header class="bg-white sticky top-0 z-40 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 py-3">
+        <div class="flex items-center justify-between gap-4">
+          <!-- Mobile Menu Button -->
           <button
-            id="cart-toggle"
-            class="relative p-2 text-neutral-gray_dark hover:text-primary-800 transition"
-            aria-label="Abrir carrito de compras"
+            id="mobile-menu-toggle"
+            class="md:hidden p-2 text-jd-black hover:text-jd-red transition"
+            aria-label="Abrir menú"
           >
             <svg
               class="w-6 h-6"
@@ -61,119 +65,521 @@ const { title, description } = Astro.props;
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-              />
+                d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
-            <span
-              id="cart-count"
-              class="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
-            >
-              0
-            </span>
           </button>
 
-          <!-- Admin link -->
-          <a
-            href="/admin"
-            class="hidden sm:inline-flex px-4 py-2 text-xs font-semibold text-primary-800 border border-primary-800 rounded hover:bg-primary-50 transition"
-          >
-            Admin
+          <!-- Logo -->
+          <a href="/" class="flex-shrink-0">
+            <span
+              class="text-2xl md:text-3xl font-black text-jd-black tracking-tight uppercase"
+            >
+              JG<span class="text-jd-red">Market</span>
+            </span>
           </a>
+
+          <!-- Search Bar (Desktop) -->
+          <div class="hidden md:flex flex-1 max-w-xl mx-8">
+            <div class="flex w-full">
+              <input
+                type="text"
+                placeholder="Buscar en JGMarket: Nike, Adidas..."
+                class="flex-1 px-4 py-2 border border-r-0 border-gray-300 rounded-l focus:outline-none focus:border-jd-turquoise text-sm"
+              />
+              <button
+                class="px-6 py-2 bg-jd-turquoise text-white font-bold text-sm rounded-r hover:bg-opacity-90 transition"
+              >
+                Buscar
+              </button>
+            </div>
+          </div>
+
+          <!-- Icons -->
+          <div class="flex items-center gap-3">
+            <!-- Search (Mobile) -->
+            <button
+              class="md:hidden p-2 text-jd-black hover:text-jd-red transition"
+            >
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </button>
+
+            <!-- Wishlist -->
+            <button
+              class="hidden sm:block p-2 text-jd-black hover:text-jd-red transition"
+            >
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                ></path>
+              </svg>
+            </button>
+
+            <!-- Cart -->
+            <button
+              id="cart-toggle"
+              class="relative p-2 text-jd-black hover:text-jd-red transition"
+              aria-label="Abrir carrito"
+            >
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+              </svg>
+              <span
+                id="cart-count"
+                class="absolute -top-1 -right-1 bg-jd-red text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
+              >
+                0
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4">
+          <ul class="hidden md:flex items-center justify-center gap-8 py-3">
+            <li>
+              <a
+                href="/productos"
+                class="text-sm font-bold text-jd-red uppercase hover:text-jd-black transition"
+              >
+                Rebajas
+              </a>
+            </li>
+            <li>
+              <a
+                href="/productos?categoria=zapatillas"
+                class="text-sm font-bold text-jd-black uppercase hover:text-jd-red transition"
+              >
+                Zapatillas
+              </a>
+            </li>
+            <li>
+              <a
+                href="/productos?categoria=ropa"
+                class="text-sm font-bold text-jd-black uppercase hover:text-jd-red transition"
+              >
+                Ropa
+              </a>
+            </li>
+            <li>
+              <a
+                href="/productos?categoria=accesorios"
+                class="text-sm font-bold text-jd-black uppercase hover:text-jd-red transition"
+              >
+                Accesorios
+              </a>
+            </li>
+            <li>
+              <a
+                href="/productos"
+                class="text-sm font-bold text-jd-black uppercase hover:text-jd-red transition"
+              >
+                Marcas
+              </a>
+            </li>
+          </ul>
         </div>
       </nav>
+
+      <!-- Mobile Menu -->
+      <div
+        id="mobile-menu"
+        class="hidden md:hidden bg-white border-t border-gray-200"
+      >
+        <nav class="px-4 py-4 flex flex-col gap-3">
+          <a
+            href="/productos"
+            class="text-sm font-bold text-jd-red uppercase py-2">Rebajas</a
+          >
+          <a
+            href="/productos?categoria=zapatillas"
+            class="text-sm font-bold text-jd-black uppercase py-2 border-t border-gray-100 pt-3"
+            >Zapatillas</a
+          >
+          <a
+            href="/productos?categoria=ropa"
+            class="text-sm font-bold text-jd-black uppercase py-2">Ropa</a
+          >
+          <a
+            href="/productos?categoria=accesorios"
+            class="text-sm font-bold text-jd-black uppercase py-2">Accesorios</a
+          >
+          <a
+            href="/contacto"
+            class="text-sm font-bold text-jd-black uppercase py-2 border-t border-gray-100 pt-3"
+            >Ayuda</a
+          >
+          <a
+            href="/admin"
+            class="text-sm font-bold text-jd-black uppercase py-2">Mi cuenta</a
+          >
+        </nav>
+      </div>
     </header>
+
+    <!-- Promo Bar (Amarillo) -->
+    <div class="bg-jd-yellow">
+      <div
+        class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-8 text-xs font-bold text-jd-black"
+      >
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fill-rule="evenodd"
+              d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17C5.06 5.687 5 5.35 5 5zm4 1V5a1 1 0 10-1 1h1zm3 0a1 1 0 10-1-1v1h1z"
+              clip-rule="evenodd"></path>
+            <path d="M9 11H3v5a2 2 0 002 2h4v-7zM11 18h4a2 2 0 002-2v-5h-6v7z"
+            ></path>
+          </svg>
+          ENVÍO GRATIS +50€
+        </span>
+        <span class="hidden sm:flex items-center gap-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fill-rule="evenodd"
+              d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
+              clip-rule="evenodd"></path>
+          </svg>
+          DEVOLUCIONES 60 DÍAS
+        </span>
+        <span class="hidden md:flex items-center gap-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fill-rule="evenodd"
+              d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+              clip-rule="evenodd"></path>
+          </svg>
+          RECOGIDA EN TIENDA
+        </span>
+      </div>
+    </div>
 
     <!-- Main content -->
     <main class="flex-grow">
       <slot />
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-primary-800 text-neutral-white mt-20">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          <!-- About -->
-          <div>
-            <h3 class="font-serif text-lg mb-4">FashionMarket</h3>
-            <p class="text-sm text-neutral-gray_light">
-              Moda masculina premium con diseño sofisticado. Cada prenda cuidadosamente
-              seleccionada.
-            </p>
+    <!-- Footer (Negro estilo JD) -->
+    <footer class="bg-jd-black text-white mt-12">
+      <!-- Newsletter -->
+      <div class="border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+          <div
+            class="flex flex-col md:flex-row items-center justify-between gap-4"
+          >
+            <div>
+              <h3 class="font-bold text-lg uppercase">
+                Suscríbete a nuestra newsletter
+              </h3>
+              <p class="text-gray-400 text-sm">
+                Recibe las últimas novedades y ofertas exclusivas
+              </p>
+            </div>
+            <div class="flex w-full md:w-auto">
+              <input
+                type="email"
+                placeholder="Tu email"
+                class="flex-1 md:w-64 px-4 py-2 bg-gray-800 border border-gray-700 text-white text-sm rounded-l focus:outline-none focus:border-jd-turquoise"
+              />
+              <button
+                class="px-6 py-2 bg-jd-turquoise text-white font-bold text-sm rounded-r hover:bg-opacity-90 transition uppercase"
+              >
+                Suscribir
+              </button>
+            </div>
           </div>
+        </div>
+      </div>
 
-          <!-- Links -->
+      <!-- Links -->
+      <div class="max-w-7xl mx-auto px-4 py-12">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <!-- Compra -->
           <div>
-            <h4 class="font-semibold text-sm mb-4">Tienda</h4>
-            <ul class="space-y-2 text-sm text-neutral-gray_light">
-              <li><a href="/productos" class="hover:text-neutral-white transition">Todos</a></li>
-              <li><a href="/categoria/camisas" class="hover:text-neutral-white transition">Camisas</a></li>
+            <h4 class="font-bold text-sm uppercase mb-4">
+              Compra con nosotros
+            </h4>
+            <ul class="space-y-2 text-sm text-gray-400">
               <li>
-                <a
-                  href="/categoria/pantalones"
-                  class="hover:text-neutral-white transition"
-                >
-                  Pantalones
-                </a>
+                <a href="/productos" class="hover:text-white transition"
+                  >Novedades</a>
               </li>
-              <li><a href="/categoria/trajes" class="hover:text-neutral-white transition">Trajes</a></li>
+              <li>
+                <a href="/productos" class="hover:text-white transition"
+                  >Zapatillas</a>
+              </li>
+              <li>
+                <a href="/productos" class="hover:text-white transition"
+                  >Ropa</a>
+              </li>
+              <li>
+                <a href="/productos" class="hover:text-white transition"
+                  >Accesorios</a>
+              </li>
             </ul>
           </div>
 
-          <!-- Customer -->
+          <!-- Atención -->
           <div>
-            <h4 class="font-semibold text-sm mb-4">Atención al Cliente</h4>
-            <ul class="space-y-2 text-sm text-neutral-gray_light">
-              <li><a href="#" class="hover:text-neutral-white transition">Contacto</a></li>
-              <li><a href="#" class="hover:text-neutral-white transition">Envíos</a></li>
-              <li><a href="#" class="hover:text-neutral-white transition">Devoluciones</a></li>
+            <h4 class="font-bold text-sm uppercase mb-4">
+              Atención al cliente
+            </h4>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li>
+                <a href="/contacto" class="hover:text-white transition"
+                  >Contacto</a>
+              </li>
+              <li><a href="#" class="hover:text-white transition">FAQs</a></li>
+              <li>
+                <a href="#" class="hover:text-white transition">Envíos</a>
+              </li>
+              <li>
+                <a href="#" class="hover:text-white transition">Devoluciones</a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Empresa -->
+          <div>
+            <h4 class="font-bold text-sm uppercase mb-4">La empresa</h4>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li>
+                <a href="#" class="hover:text-white transition"
+                  >Sobre nosotros</a>
+              </li>
+              <li>
+                <a href="#" class="hover:text-white transition">Tiendas</a>
+              </li>
+              <li>
+                <a href="#" class="hover:text-white transition"
+                  >Trabaja con nosotros</a>
+              </li>
             </ul>
           </div>
 
           <!-- Legal -->
           <div>
-            <h4 class="font-semibold text-sm mb-4">Legal</h4>
-            <ul class="space-y-2 text-sm text-neutral-gray_light">
-              <li><a href="#" class="hover:text-neutral-white transition">Términos</a></li>
-              <li><a href="#" class="hover:text-neutral-white transition">Privacidad</a></li>
-              <li><a href="#" class="hover:text-neutral-white transition">Cookies</a></li>
+            <h4 class="font-bold text-sm uppercase mb-4">Legal</h4>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li>
+                <a href="#" class="hover:text-white transition"
+                  >Términos y condiciones</a>
+              </li>
+              <li>
+                <a href="#" class="hover:text-white transition"
+                  >Política de privacidad</a>
+              </li>
+              <li>
+                <a href="#" class="hover:text-white transition">Cookies</a>
+              </li>
             </ul>
           </div>
         </div>
+      </div>
 
-        <div class="border-t border-primary-700 pt-8 text-center text-sm text-neutral-gray_light">
-          <p>&copy; 2026 FashionMarket. Todos los derechos reservados.</p>
+      <!-- Payment Methods & Social -->
+      <div class="border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+          <div
+            class="flex flex-col md:flex-row items-center justify-between gap-4"
+          >
+            <!-- Payment -->
+            <div class="flex items-center gap-4">
+              <span class="text-xs text-gray-500 uppercase"
+                >Métodos de pago:</span
+              >
+              <div class="flex items-center gap-2">
+                <div
+                  class="w-10 h-6 bg-white rounded flex items-center justify-center text-xs font-bold text-jd-black"
+                >
+                  VISA
+                </div>
+                <div
+                  class="w-10 h-6 bg-white rounded flex items-center justify-center text-xs font-bold text-jd-black"
+                >
+                  MC
+                </div>
+                <div
+                  class="w-10 h-6 bg-blue-600 rounded flex items-center justify-center text-xs font-bold text-white"
+                >
+                  PP
+                </div>
+              </div>
+            </div>
+
+            <!-- Social -->
+            <div class="flex items-center gap-4">
+              <a href="#" class="text-gray-400 hover:text-white transition">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"
+                  ><path
+                    d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
+                  ></path></svg
+                >
+              </a>
+              <a href="#" class="text-gray-400 hover:text-white transition">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"
+                  ><path
+                    d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
+                  ></path></svg
+                >
+              </a>
+              <a href="#" class="text-gray-400 hover:text-white transition">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"
+                  ><path
+                    d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"
+                  ></path></svg
+                >
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Copyright -->
+      <div class="bg-black">
+        <div
+          class="max-w-7xl mx-auto px-4 py-4 text-center text-xs text-gray-500"
+        >
+          © 2026 JGMarket. Todos los derechos reservados.
         </div>
       </div>
     </footer>
   </div>
 
+  <!-- Cart Overlay -->
   <div id="cart-overlay" class="hidden fixed inset-0 z-50 bg-black/50"></div>
+
+  <!-- Cart Sidebar -->
   <div
     id="cart-sidebar"
-    class="fixed right-0 top-0 h-full w-full max-w-md bg-neutral-white shadow-lg z-50 flex flex-col transform transition-transform duration-300 translate-x-full"
+    class="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-lg z-50 flex flex-col transform transition-transform duration-300 translate-x-full"
   >
-    <!-- Placeholder para carrito - será reemplazado con componente -->
+    <!-- Cart Header -->
+    <div class="p-4 bg-jd-black text-white flex items-center justify-between">
+      <h3 class="font-bold text-lg uppercase">Tu Carrito</h3>
+      <button id="cart-close" class="p-2 hover:bg-gray-800 rounded transition">
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Cart Content -->
+    <div class="flex-1 overflow-y-auto p-4">
+      <div id="cart-items" class="space-y-4">
+        <div class="text-center py-12 text-gray-500">
+          <svg
+            class="w-16 h-16 mx-auto text-gray-300 mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1"
+              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+          </svg>
+          <p class="font-bold">Tu carrito está vacío</p>
+          <p class="text-sm mt-1">¡Añade productos para empezar!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cart Footer -->
+    <div class="p-4 border-t border-gray-200 bg-jd-gray">
+      <div class="flex justify-between mb-4">
+        <span class="font-bold">Total</span>
+        <span id="cart-total" class="font-bold text-jd-red">€0.00</span>
+      </div>
+      <a
+        href="/carrito"
+        class="block w-full py-3 bg-jd-turquoise text-white text-center font-bold uppercase rounded hover:bg-opacity-90 transition"
+      >
+        Ver Carrito Completo
+      </a>
+    </div>
   </div>
 
   <script>
-    // Listener para el toggle del carrito
-    const cartToggle = document.getElementById('cart-toggle');
-    const cartSidebar = document.getElementById('cart-sidebar');
-    const cartOverlay = document.getElementById('cart-overlay');
+    // Mobile menu toggle
+    const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+    const mobileMenu = document.getElementById("mobile-menu");
+
+    if (mobileMenuToggle && mobileMenu) {
+      mobileMenuToggle.addEventListener("click", () => {
+        mobileMenu.classList.toggle("hidden");
+      });
+    }
+
+    // Cart toggle
+    const cartToggle = document.getElementById("cart-toggle");
+    const cartSidebar = document.getElementById("cart-sidebar");
+    const cartOverlay = document.getElementById("cart-overlay");
+    const cartClose = document.getElementById("cart-close");
 
     if (cartToggle && cartSidebar && cartOverlay) {
       const toggleCart = () => {
-        cartSidebar.classList.toggle('hidden');
-        cartOverlay.classList.toggle('hidden');
-        cartSidebar.classList.toggle('translate-x-full');
+        const isHidden = cartSidebar.classList.contains("translate-x-full");
+
+        if (isHidden) {
+          cartOverlay.classList.remove("hidden");
+          cartSidebar.classList.remove("translate-x-full");
+        } else {
+          cartOverlay.classList.add("hidden");
+          cartSidebar.classList.add("translate-x-full");
+        }
       };
 
-      cartToggle.addEventListener('click', toggleCart);
-      cartOverlay.addEventListener('click', toggleCart);
+      cartToggle.addEventListener("click", toggleCart);
+      cartOverlay.addEventListener("click", toggleCart);
+      if (cartClose) {
+        cartClose.addEventListener("click", toggleCart);
+      }
 
-      // Cerrar con ESC
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !cartSidebar.classList.contains('hidden')) {
+      document.addEventListener("keydown", (e) => {
+        if (
+          e.key === "Escape" &&
+          !cartSidebar.classList.contains("translate-x-full")
+        ) {
           toggleCart();
         }
       });

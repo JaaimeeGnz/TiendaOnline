@@ -4,7 +4,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Paleta personalizada: Minimalismo Sofisticado
+        // Paleta JD Sports Style
+        jd: {
+          black: '#000000',
+          red: '#E2001A',
+          turquoise: '#1FC0A0',
+          yellow: '#FFFF00',
+          gray: '#F6F6F6',
+          darkGray: '#333333',
+          white: '#FFFFFF',
+        },
+        // Mantener compatibilidad con colores existentes
         primary: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -14,26 +24,26 @@ export default {
           500: '#64748b',
           600: '#475569',
           700: '#334155',
-          800: '#1e293b', // Azul marino principal
-          900: '#0f172a', // Muy oscuro
+          800: '#000000', // Cambiado a negro JD
+          900: '#000000',
         },
         accent: {
-          gold: '#d4af37',
-          gold_muted: '#b8963a',
-          leather: '#8b7355',
+          gold: '#E2001A', // Cambiado a rojo JD
+          gold_muted: '#c7001a',
+          turquoise: '#1FC0A0',
         },
         neutral: {
-          white: '#fafaf8', // Blanco roto
-          gray_light: '#f5f5f3',
+          white: '#FFFFFF',
+          gray_light: '#F6F6F6',
           gray_medium: '#d3d3d1',
-          gray_dark: '#4a4a48', // Gris carbón
-          black: '#1a1a18',
+          gray_dark: '#333333',
+          black: '#000000',
         },
       },
       fontFamily: {
-        // Tipografías elegantes
-        serif: ['Playfair Display', 'ui-serif', 'Georgia', 'serif'], // Para títulos
-        sans: ['Inter', 'ui-sans-serif', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'], // Para textos
+        // Tipografías estilo JD Sports (bold, deportivo)
+        serif: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'], // Para títulos (bold)
+        sans: ['Inter', 'ui-sans-serif', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       spacing: {
         // Espaciado generoso para minimalismo

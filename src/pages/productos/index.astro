@@ -1,64 +1,316 @@
 ---
 /**
  * src/pages/productos/index.astro
- * Listado de todos los productos (SSG)
+ * Página de productos estilo JD Sports
  */
 
-import PublicLayout from '../../layouts/PublicLayout.astro';
-import ProductCard from '../../components/product/ProductCard.astro';
-import { supabaseClient } from '../../lib/supabase';
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import ProductCard from "../../components/product/ProductCard.astro";
+import { supabaseClient } from "../../lib/supabase";
 
-// Obtener todos los productos activos
-const { data: allProducts } = await supabaseClient
-  .from('products')
-  .select('*')
-  .eq('is_active', true)
-  .order('created_at', { ascending: false });
+// Obtener parámetro de categoría
+const url = new URL(Astro.request.url);
+const categorySlug = url.searchParams.get("categoria");
+const brandFilter = url.searchParams.get("marca");
 
-const products = allProducts || [];
+// Obtener categorías para filtros
+const { data: categories } = await supabaseClient
+  .from("categories")
+  .select("*")
+  .eq("is_active", true)
+  .order("display_order");
+
+let products = [];
+let categoryName = "";
+let pageTitle = "Todos los Productos";
+
+if (categorySlug) {
+  const { data: category } = await supabaseClient
+    .from("categories")
+    .select("*")
+    .eq("slug", categorySlug)
+    .eq("is_active", true)
+    .single();
+
+  if (category) {
+    categoryName = category.name;
+    pageTitle = category.name;
+
+    const { data: categoryProducts } = await supabaseClient
+      .from("products")
+      .select("*")
+      .eq("category_id", category.id)
+      .eq("is_active", true)
+      .order("featured", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    products = categoryProducts || [];
+  }
+} else {
+  const { data: allProducts } = await supabaseClient
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .order("featured", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  products = allProducts || [];
+}
+
+// Obtener marcas únicas para filtros
+const uniqueBrands = [...new Set(products.map((p) => p.brand).filter(Boolean))];
 ---
 
-<PublicLayout title="Productos - FashionMarket">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <!-- Header -->
-    <div class="mb-12">
-      <h1 class="font-serif text-4xl font-bold text-primary-800 mb-4">Catálogo Completo</h1>
-      <p class="text-lg text-neutral-gray_dark">
-        Descubre nuestra colección completa de moda masculina premium
-      </p>
-    </div>
+<PublicLayout title={`${pageTitle} - JGMarket`}>
+  <div class="bg-jd-gray min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center gap-2 mb-6 text-sm text-gray-500">
+        <a href="/" class="hover:text-jd-black transition">Inicio</a>
+        <span>/</span>
+        <a href="/productos" class="hover:text-jd-black transition">Productos</a
+        >
+        {
+          categoryName && (
+            <>
+              <span>/</span>
+              <span class="text-jd-black font-bold">{categoryName}</span>
+            </>
+          )
+        }
+      </nav>
 
-    <!-- Filter bar (placeholder para filtrado dinámico en futuro) -->
-    <div class="mb-8 pb-8 border-b border-primary-200 flex items-center justify-between">
-      <span class="text-sm text-neutral-gray_dark">
-        {products.length} productos disponibles
-      </span>
-      <div class="flex gap-4">
-        <button class="text-sm font-semibold text-primary-800 hover:text-primary-900">
-          Ordenar por: Relevancia
-        </button>
+      <!-- Header -->
+      <div
+        class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"
+      >
+        <div>
+          <h1 class="text-3xl md:text-4xl font-black text-jd-black uppercase">
+            {pageTitle}
+          </h1>
+          <p class="text-gray-500 mt-1">{products.length} productos</p>
+        </div>
+
+        <!-- Sort Dropdown -->
+        <div class="flex items-center gap-4">
+          <select
+            id="sort-select"
+            class="px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-jd-turquoise"
+          >
+            <option value="featured">Destacados</option>
+            <option value="price-low">Precio: Menor a Mayor</option>
+            <option value="price-high">Precio: Mayor a Menor</option>
+            <option value="newest">Más Recientes</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Filters Sidebar -->
+        <aside class="lg:col-span-1">
+          <div class="bg-white rounded p-4 sticky top-24">
+            <h3
+              class="font-bold text-sm uppercase mb-4 pb-2 border-b border-gray-200"
+            >
+              Filtros
+            </h3>
+
+            <!-- Categories -->
+            <div class="mb-6">
+              <h4 class="font-bold text-sm uppercase mb-3">Categoría</h4>
+              <ul class="space-y-2">
+                <li>
+                  <a
+                    href="/productos"
+                    class={`text-sm ${!categorySlug ? "font-bold text-jd-red" : "text-gray-600 hover:text-jd-black"} transition`}
+                  >
+                    Todos
+                  </a>
+                </li>
+                {
+                  (categories || []).map((cat: any) => (
+                    <li>
+                      <a
+                        href={`/productos?categoria=${cat.slug}`}
+                        class={`text-sm ${categorySlug === cat.slug ? "font-bold text-jd-red" : "text-gray-600 hover:text-jd-black"} transition`}
+                      >
+                        {cat.name}
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+
+            <!-- Brands -->
+            {
+              uniqueBrands.length > 0 && (
+                <div class="mb-6">
+                  <h4 class="font-bold text-sm uppercase mb-3">Marca</h4>
+                  <ul class="space-y-2">
+                    {uniqueBrands.map((brand) => (
+                      <li class="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`brand-${brand}`}
+                          class="brand-filter w-4 h-4 rounded border-gray-300 text-jd-turquoise focus:ring-jd-turquoise"
+                          data-brand={brand}
+                        />
+                        <label
+                          for={`brand-${brand}`}
+                          class="text-sm text-gray-600"
+                        >
+                          {brand}
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            }
+
+            <!-- Price Range -->
+            <div class="mb-6">
+              <h4 class="font-bold text-sm uppercase mb-3">Precio</h4>
+              <div class="space-y-2">
+                <label class="flex items-center gap-2 text-sm text-gray-600">
+                  <input
+                    type="radio"
+                    name="price"
+                    value="all"
+                    checked
+                    class="text-jd-turquoise focus:ring-jd-turquoise"
+                  />
+                  Todos
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-600">
+                  <input
+                    type="radio"
+                    name="price"
+                    value="0-50"
+                    class="text-jd-turquoise focus:ring-jd-turquoise"
+                  />
+                  Menos de €50
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-600">
+                  <input
+                    type="radio"
+                    name="price"
+                    value="50-100"
+                    class="text-jd-turquoise focus:ring-jd-turquoise"
+                  />
+                  €50 - €100
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-600">
+                  <input
+                    type="radio"
+                    name="price"
+                    value="100-200"
+                    class="text-jd-turquoise focus:ring-jd-turquoise"
+                  />
+                  €100 - €200
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-600">
+                  <input
+                    type="radio"
+                    name="price"
+                    value="200+"
+                    class="text-jd-turquoise focus:ring-jd-turquoise"
+                  />
+                  Más de €200
+                </label>
+              </div>
+            </div>
+
+            <!-- Sale Filter -->
+            <div>
+              <label class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="sale-filter"
+                  class="w-4 h-4 rounded border-gray-300 text-jd-red focus:ring-jd-red"
+                />
+                <span class="text-sm font-bold text-jd-red uppercase"
+                  >Solo Rebajas</span
+                >
+              </label>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Products Grid -->
+        <div class="lg:col-span-3">
+          {
+            products.length > 0 ? (
+              <div
+                id="products-grid"
+                class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"
+              >
+                {products.map((product: any) => (
+                  <ProductCard
+                    id={product.id}
+                    name={product.name}
+                    slug={product.slug}
+                    price={product.price_cents}
+                    originalPrice={product.original_price_cents}
+                    image={product.images?.[0]}
+                    stock={product.stock}
+                    featured={product.featured}
+                    brand={product.brand}
+                    onSale={
+                      product.original_price_cents &&
+                      product.original_price_cents > product.price_cents
+                    }
+                  />
+                ))}
+              </div>
+            ) : (
+              <div class="bg-white rounded p-12 text-center">
+                <svg
+                  class="w-16 h-16 mx-auto text-gray-300 mb-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1"
+                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                  />
+                </svg>
+                <h3 class="text-xl font-bold text-jd-black mb-2">
+                  No hay productos
+                </h3>
+                <p class="text-gray-500 mb-6">
+                  No se encontraron productos en esta categoría
+                </p>
+                <a
+                  href="/productos"
+                  class="inline-block px-6 py-3 bg-jd-turquoise text-white font-bold uppercase text-sm hover:bg-opacity-90 transition"
+                >
+                  Ver todos los productos
+                </a>
+              </div>
+            )
+          }
+        </div>
       </div>
     </div>
-
-    <!-- Products Grid -->
-    {products.length > 0 ? (
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {products.map((product) => (
-          <ProductCard
-            id={product.id}
-            name={product.name}
-            slug={product.slug}
-            price={product.price_cents}
-            image={product.images?.[0]}
-            stock={product.stock}
-            featured={product.featured}
-          />
-        ))}
-      </div>
-    ) : (
-      <div class="text-center py-20 bg-neutral-gray_light rounded-sm">
-        <p class="text-neutral-gray_dark text-lg">No hay productos disponibles</p>
-      </div>
-    )}
   </div>
+
+  <script>
+    // Initialize cart count on page load
+    document.addEventListener("DOMContentLoaded", () => {
+      const cart = JSON.parse(localStorage.getItem("jgmarket-cart") || "[]");
+      const cartCount = document.getElementById("cart-count");
+      if (cartCount) {
+        const totalItems = cart.reduce(
+          (sum: number, item: any) => sum + item.quantity,
+          0,
+        );
+        cartCount.textContent = totalItems.toString();
+      }
+    });
+  </script>
 </PublicLayout>

@@ -1,0 +1,35 @@
+---
+/**
+ * src/pages/auth/index.astro
+ * Página de autenticación pública (login/registro)
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AuthForm from '../../components/auth/AuthForm';
+
+const error = Astro.url.searchParams.get('error');
+const message = Astro.url.searchParams.get('message');
+---
+
+<BaseLayout title="Autenticación - JGMarket">
+  <div class="min-h-screen bg-gradient-to-br from-jd-black to-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <AuthForm client:load />
+  </div>
+</BaseLayout>
+
+<style>
+  :global(.jd-black) {
+    --tw-bg-opacity: 1;
+    background-color: rgb(0 0 0 / var(--tw-bg-opacity));
+  }
+  
+  :global(.jd-red) {
+    --tw-text-opacity: 1;
+    color: rgb(220 38 38 / var(--tw-text-opacity));
+  }
+  
+  :global(.jd-turquoise) {
+    --tw-text-opacity: 1;
+    color: rgb(20 184 166 / var(--tw-text-opacity));
+  }
+</style>

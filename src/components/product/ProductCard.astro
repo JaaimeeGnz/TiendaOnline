@@ -1,80 +1,245 @@
 ---
 /**
  * ProductCard.astro
- * Tarjeta de producto para el listado
+ * Tarjeta de producto estilo JD Sports
  */
-
-import { formatPrice } from '../../lib/utils';
 
 interface Props {
   id: string;
   name: string;
   slug: string;
-  price: number; // en céntimos
+  price: number;
+  originalPrice?: number | null;
   image?: string;
   stock: number;
   featured?: boolean;
+  brand?: string;
+  onSale?: boolean;
 }
 
-const { id, name, slug, price, image, stock, featured = false } = Astro.props;
+const {
+  id,
+  name,
+  slug,
+  price,
+  originalPrice,
+  image,
+  stock,
+  featured,
+  brand,
+  onSale,
+} = Astro.props;
 
-const inStock = stock > 0;
-const isLowStock = stock > 0 && stock <= 5;
+// Calcular descuento
+const hasDiscount = originalPrice && originalPrice > price;
+const discountPercent = hasDiscount
+  ? Math.round((1 - price / originalPrice) * 100)
+  : 0;
+
+// Formatear precios
+const formattedPrice = (price / 100).toFixed(2);
+const formattedOriginalPrice = originalPrice
+  ? (originalPrice / 100).toFixed(2)
+  : null;
+
+// Stock status (computed to avoid <= syntax issues in template)
+const isOutOfStock = stock === 0 || stock < 0;
+const isLowStock = stock > 0 && stock < 6;
 ---
 
-<a href={`/productos/${slug}`} class="group">
-  <div
-    class={`relative overflow-hidden rounded-sm bg-neutral-gray_light aspect-square ${featured ? 'ring-2 ring-accent-gold' : ''}`}
+<article
+  class="group bg-white rounded overflow-hidden transition hover:shadow-lg"
+>
+  <!-- Image Container -->
+  <a
+    href={`/productos/${slug}`}
+    class="block relative aspect-square overflow-hidden bg-jd-gray"
   >
-    {image ? (
-      <img
-        src={image}
-        alt={name}
-        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        loading="lazy"
-      />
-    ) : (
-      <div class="w-full h-full bg-neutral-gray_medium flex items-center justify-center">
-        <span class="text-neutral-gray_dark text-sm">Sin imagen</span>
-      </div>
-    )}
+    {
+      image ? (
+        <img
+          src={image}
+          alt={name}
+          class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+        />
+      ) : (
+        <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+          <svg
+            class="w-16 h-16 text-gray-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+        </div>
+      )
+    }
 
-    {!inStock && (
-      <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-        <span class="text-neutral-white font-serif text-lg font-bold">Agotado</span>
-      </div>
-    )}
+    <!-- Badges -->
+    <div class="absolute top-2 left-2 flex flex-col gap-1">
+      {
+        (hasDiscount || onSale) && (
+          <span class="px-2 py-1 bg-jd-red text-white text-xs font-bold uppercase">
+            -{discountPercent}%
+          </span>
+        )
+      }
+      {
+        featured && !hasDiscount && (
+          <span class="px-2 py-1 bg-jd-black text-white text-xs font-bold uppercase">
+            Nuevo
+          </span>
+        )
+      }
+    </div>
 
-    {featured && (
-      <div class="absolute top-3 right-3 bg-accent-gold text-primary-800 px-2 py-1 text-xs font-bold rounded-sm">
-        DESTACADO
-      </div>
-    )}
-  </div>
+    <!-- Quick Add (hover) -->
+    <button
+      class="add-to-cart-btn absolute bottom-0 left-0 right-0 py-3 bg-jd-turquoise text-white font-bold text-sm uppercase opacity-0 group-hover:opacity-100 transition-opacity"
+      data-product-id={id}
+      data-product-name={name}
+      data-product-price={price}
+      data-product-image={image || ""}
+    >
+      Añadir al Carrito
+    </button>
+  </a>
 
-  <div class="mt-4 space-y-2">
-    <h3 class="font-serif text-lg text-primary-800 group-hover:text-primary-900 transition">
-      {name}
+  <!-- Product Info -->
+  <div class="p-3">
+    <!-- Brand -->
+    {
+      brand && (
+        <span class="text-xs font-bold text-gray-500 uppercase">{brand}</span>
+      )
+    }
+
+    <!-- Name -->
+    <h3
+      class="font-bold text-sm text-jd-black line-clamp-2 mt-1 group-hover:text-jd-red transition"
+    >
+      <a href={`/productos/${slug}`}>{name}</a>
     </h3>
 
-    <div class="flex items-center justify-between">
-      <span class="text-lg font-semibold text-neutral-gray_dark">
-        {formatPrice(price)}
+    <!-- Price -->
+    <div class="mt-2 flex items-center gap-2">
+      {
+        hasDiscount && formattedOriginalPrice && (
+          <span class="text-sm text-gray-400 line-through">
+            €{formattedOriginalPrice}
+          </span>
+        )
+      }
+      <span
+        class={`font-bold ${hasDiscount ? "text-jd-red" : "text-jd-black"}`}
+      >
+        €{formattedPrice}
       </span>
+    </div>
 
-      {isLowStock && (
-        <span class="text-xs font-semibold text-amber-600 uppercase">
-          {stock} disponibles
+    <!-- Stock Status -->
+    {
+      isOutOfStock && (
+        <span class="inline-block mt-2 text-xs text-gray-500 uppercase">
+          Agotado
         </span>
-      )}
-    </div>
-
-    <div class="text-xs text-neutral-gray_dark">
-      {inStock ? (
-        <span class="text-green-600 font-semibold">En stock</span>
-      ) : (
-        <span class="text-red-600 font-semibold">Agotado</span>
-      )}
-    </div>
+      )
+    }
+    {
+      isLowStock && (
+        <span class="inline-block mt-2 text-xs text-jd-red uppercase">
+          ¡Últimas unidades!
+        </span>
+      )
+    }
   </div>
-</a>
+</article>
+
+<script>
+  // Add to cart functionality
+  document.querySelectorAll(".add-to-cart-btn").forEach((button) => {
+    button.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const btn = e.target as HTMLButtonElement;
+      const productId = btn.dataset.productId;
+      const productName = btn.dataset.productName;
+      const productPrice = parseInt(btn.dataset.productPrice || "0");
+      const productImage = btn.dataset.productImage;
+
+      // Get current cart from localStorage
+      const cart = JSON.parse(localStorage.getItem("jgmarket-cart") || "[]");
+
+      // Check if product already in cart
+      const existingIndex = cart.findIndex(
+        (item: any) => item.id === productId,
+      );
+
+      if (existingIndex >= 0) {
+        cart[existingIndex].quantity += 1;
+      } else {
+        cart.push({
+          id: productId,
+          name: productName,
+          price: productPrice,
+          image: productImage,
+          quantity: 1,
+        });
+      }
+
+      // Save to localStorage
+      localStorage.setItem("jgmarket-cart", JSON.stringify(cart));
+
+      // Update cart count
+      const cartCount = document.getElementById("cart-count");
+      if (cartCount) {
+        const totalItems = cart.reduce(
+          (sum: number, item: any) => sum + item.quantity,
+          0,
+        );
+        cartCount.textContent = totalItems.toString();
+      }
+
+      // Visual feedback
+      btn.textContent = "¡Añadido!";
+      btn.classList.remove("bg-jd-turquoise");
+      btn.classList.add("bg-green-500");
+
+      setTimeout(() => {
+        btn.textContent = "Añadir al Carrito";
+        btn.classList.remove("bg-green-500");
+        btn.classList.add("bg-jd-turquoise");
+      }, 1500);
+    });
+  });
+
+  // Initialize cart count on page load
+  document.addEventListener("DOMContentLoaded", () => {
+    const cart = JSON.parse(localStorage.getItem("jgmarket-cart") || "[]");
+    const cartCount = document.getElementById("cart-count");
+    if (cartCount) {
+      const totalItems = cart.reduce(
+        (sum: number, item: any) => sum + item.quantity,
+        0,
+      );
+      cartCount.textContent = totalItems.toString();
+    }
+  });
+</script>
+
+<style>
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>
