@@ -6,13 +6,18 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
 // Cargar variables de entorno desde .env.local
-const supabaseUrl = 'https://pygrobxheswyltsgyzfd.supabase.co';
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5Z3JvYnhoZXN3eWx0c2d5emZkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzkzMDYyOSwiZXhwIjoyMDgzNTA2NjI5fQ.vKPGZ2bJFfUKBxU4hJQRKXp1bX8z7Y9pL2mN3qR8sT0';
+dotenv.config({ path: '.env.local' });
+
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Error: Faltan variables de entorno SUPABASE');
+  console.error('PUBLIC_SUPABASE_URL:', supabaseUrl ? '✅' : '❌');
+  console.error('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✅' : '❌');
   process.exit(1);
 }
 

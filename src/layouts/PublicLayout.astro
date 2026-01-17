@@ -12,6 +12,14 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+
+// Obtener la ruta actual para resaltar el menú activo
+const currentPath = new URL(Astro.request.url).pathname;
+const isProductos = currentPath === '/productos';
+const isZapatillas = currentPath.startsWith('/categoria/zapatillas');
+const isRopa = currentPath.startsWith('/categoria/ropa');
+const isAccesorios = currentPath.startsWith('/categoria/accesorios');
+const isMarcas = currentPath.startsWith('/marcas');
 ---
 
 <BaseLayout title={title} description={description}>
@@ -169,39 +177,39 @@ const { title, description } = Astro.props;
             <li>
               <a
                 href="/productos"
-                class="text-sm font-bold text-jd-red uppercase hover:text-jd-black transition"
+                class={`text-sm font-bold uppercase hover:text-jd-red transition ${isProductos ? 'text-jd-red' : 'text-jd-black'}`}
               >
-                Rebajas
+                Productos
               </a>
             </li>
             <li>
               <a
-                href="/productos?categoria=zapatillas"
-                class="text-sm font-bold text-jd-black uppercase hover:text-jd-red transition"
+                href="/categoria/zapatillas"
+                class={`text-sm font-bold uppercase hover:text-jd-red transition ${isZapatillas ? 'text-jd-red' : 'text-jd-black'}`}
               >
                 Zapatillas
               </a>
             </li>
             <li>
               <a
-                href="/productos?categoria=ropa"
-                class="text-sm font-bold text-jd-black uppercase hover:text-jd-red transition"
+                href="/categoria/ropa"
+                class={`text-sm font-bold uppercase hover:text-jd-red transition ${isRopa ? 'text-jd-red' : 'text-jd-black'}`}
               >
                 Ropa
               </a>
             </li>
             <li>
               <a
-                href="/productos?categoria=accesorios"
-                class="text-sm font-bold text-jd-black uppercase hover:text-jd-red transition"
+                href="/categoria/accesorios"
+                class={`text-sm font-bold uppercase hover:text-jd-red transition ${isAccesorios ? 'text-jd-red' : 'text-jd-black'}`}
               >
                 Accesorios
               </a>
             </li>
             <li>
               <a
-                href="/productos"
-                class="text-sm font-bold text-jd-black uppercase hover:text-jd-red transition"
+                href="/marcas"
+                class={`text-sm font-bold uppercase hover:text-jd-red transition ${isMarcas ? 'text-jd-red' : 'text-jd-black'}`}
               >
                 Marcas
               </a>
@@ -218,30 +226,46 @@ const { title, description } = Astro.props;
         <nav class="px-4 py-4 flex flex-col gap-3">
           <a
             href="/productos"
-            class="text-sm font-bold text-jd-red uppercase py-2">Rebajas</a
+            class={`text-sm font-bold uppercase py-2 ${isProductos ? 'text-jd-red' : 'text-jd-black'}`}
           >
+            Productos
+          </a>
           <a
-            href="/productos?categoria=zapatillas"
-            class="text-sm font-bold text-jd-black uppercase py-2 border-t border-gray-100 pt-3"
-            >Zapatillas</a
+            href="/categoria/zapatillas"
+            class={`text-sm font-bold uppercase py-2 border-t border-gray-100 pt-3 ${isZapatillas ? 'text-jd-red' : 'text-jd-black'}`}
           >
+            Zapatillas
+          </a>
           <a
-            href="/productos?categoria=ropa"
-            class="text-sm font-bold text-jd-black uppercase py-2">Ropa</a
+            href="/categoria/ropa"
+            class={`text-sm font-bold uppercase py-2 ${isRopa ? 'text-jd-red' : 'text-jd-black'}`}
           >
+            Ropa
+          </a>
           <a
-            href="/productos?categoria=accesorios"
-            class="text-sm font-bold text-jd-black uppercase py-2">Accesorios</a
+            href="/categoria/accesorios"
+            class={`text-sm font-bold uppercase py-2 ${isAccesorios ? 'text-jd-red' : 'text-jd-black'}`}
           >
+            Accesorios
+          </a>
+          <a
+            href="/marcas"
+            class={`text-sm font-bold uppercase py-2 ${isMarcas ? 'text-jd-red' : 'text-jd-black'}`}
+          >
+            Marcas
+          </a>
           <a
             href="/contacto"
             class="text-sm font-bold text-jd-black uppercase py-2 border-t border-gray-100 pt-3"
-            >Ayuda</a
           >
+            Ayuda
+          </a>
           <a
             href="/admin"
-            class="text-sm font-bold text-jd-black uppercase py-2">Mi cuenta</a
+            class="text-sm font-bold text-jd-black uppercase py-2"
           >
+            Mi cuenta
+          </a>
         </nav>
       </div>
     </header>

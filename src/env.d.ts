@@ -4,6 +4,9 @@ interface ImportMetaEnv {
   readonly SUPABASE_SERVICE_ROLE_KEY: string;
   readonly PUBLIC_PRODUCTS_BUCKET: string;
   readonly PUBLIC_SITE_URL: string;
+  readonly PUBLIC_CLOUDINARY_CLOUD_NAME: string;
+  readonly CLOUDINARY_API_KEY: string;
+  readonly CLOUDINARY_API_SECRET: string;
 }
 
 interface ImportMeta {

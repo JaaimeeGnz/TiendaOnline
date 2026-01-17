@@ -4,10 +4,11 @@ import { supabaseClient } from '../../lib/supabase';
 interface AuthFormProps {
   onSuccess?: (user: any) => void;
   onGuestLogin?: () => void;
+  initialTab?: 'login' | 'register';
 }
 
-export default function AuthForm({ onSuccess, onGuestLogin }: AuthFormProps) {
-  const [isLogin, setIsLogin] = useState(true);
+export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login' }: AuthFormProps) {
+  const [isLogin, setIsLogin] = useState(initialTab === 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,7 +24,7 @@ export default function AuthForm({ onSuccess, onGuestLogin }: AuthFormProps) {
 
     try {
       if (isLogin) {
-        // Iniciar sesión
+        // LOGIN
         const { data, error: signInError } = await supabaseClient.auth.signInWithPassword({
           email,
           password,
@@ -33,12 +34,31 @@ export default function AuthForm({ onSuccess, onGuestLogin }: AuthFormProps) {
           throw signInError;
         }
 
-        setSuccess('¡Bienvenido! Redirigiendo...');
-        setTimeout(() => {
-          window.location.href = '/productos';
-        }, 1500);
+        const adminEmail = email.toLowerCase() === 'jaimechipiona2006@gmail.com';
+        
+        if (adminEmail) {
+          setSuccess('¡Bienvenido Admin! 🎉');
+          if (onSuccess) {
+            setTimeout(() => {
+              onSuccess(data?.user);
+            }, 800);
+          }
+          setTimeout(() => {
+            window.location.href = '/admin';
+          }, 1500);
+        } else {
+          setSuccess('¡Bienvenido! 👋');
+          if (onSuccess) {
+            setTimeout(() => {
+              onSuccess(data?.user);
+            }, 800);
+          }
+          setTimeout(() => {
+            window.location.href = '/productos';
+          }, 1500);
+        }
       } else {
-        // Registrarse
+        // REGISTRO
         if (password !== confirmPassword) {
           throw new Error('Las contraseñas no coinciden');
         }
@@ -47,27 +67,21 @@ export default function AuthForm({ onSuccess, onGuestLogin }: AuthFormProps) {
           throw new Error('La contraseña debe tener al menos 6 caracteres');
         }
 
-        // Registrarse con Supabase sin verificación de email
         const { data, error: signUpError } = await supabaseClient.auth.signUp({
           email,
           password,
-          options: {
-            // No requerir verificación de email
-          },
         });
 
         if (signUpError) {
           throw signUpError;
         }
 
-        // Después de registrarse, intentar iniciar sesión automáticamente
         const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
           email,
           password,
         });
 
         if (signInError) {
-          // Si no puede iniciar sesión automáticamente, mostrar instrucciones
           setSuccess('¡Cuenta creada! Por favor, inicia sesión con tus credenciales.');
           setTimeout(() => {
             setIsLogin(true);
@@ -75,147 +89,184 @@ export default function AuthForm({ onSuccess, onGuestLogin }: AuthFormProps) {
             setConfirmPassword('');
           }, 2000);
         } else if (signInData.user) {
-          // Inicio de sesión automático exitoso
-          setSuccess('¡Cuenta creada e iniciada sesión! Redirigiendo...');
+          setSuccess('¡Bienvenido!');
+          if (onSuccess) {
+            setTimeout(() => {
+              onSuccess(signInData?.user);
+            }, 800);
+          }
           setTimeout(() => {
-            window.location.href = '/';
+            window.location.href = '/productos';
           }, 1500);
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Ocurrió un error');
+      setError(err.message || 'Error desconocido');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGuestLogin = () => {
-    // Guardar un flag en localStorage para indicar que es un invitado
-    localStorage.setItem('jgmarket-guest', 'true');
+    localStorage.setItem('isGuest', 'true');
+    localStorage.setItem('guestLoginTime', new Date().toISOString());
     if (onGuestLogin) {
       onGuestLogin();
     }
-    // Redirigir a productos
     window.location.href = '/productos';
   };
 
   return (
-    <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
-      <div className="text-center mb-8">
-        <h1 className="font-serif text-3xl font-bold text-jd-black mb-2">
-          JG<span className="text-jd-red">Market</span>
-        </h1>
-        <p className="text-sm text-gray-600">
-          {isLogin ? 'Inicia sesión en tu cuenta' : 'Crea una nueva cuenta'}
-        </p>
+    <div className="w-full max-w-md">
+      {/* Tabs */}
+      <div className="flex gap-0 mb-6 bg-white rounded-t-2xl overflow-hidden shadow-lg">
+        <button
+          onClick={() => {
+            setIsLogin(true);
+            setError('');
+            setSuccess('');
+          }}
+          className={`flex-1 py-4 font-bold transition-all duration-200 ${
+            isLogin
+              ? 'bg-gradient-to-r from-jd-red to-red-700 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          Iniciar Sesión
+        </button>
+        <button
+          onClick={() => {
+            setIsLogin(false);
+            setError('');
+            setSuccess('');
+          }}
+          className={`flex-1 py-4 font-bold transition-all duration-200 ${
+            !isLogin
+              ? 'bg-gradient-to-r from-jd-red to-red-700 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          Crear Cuenta
+        </button>
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 text-red-700 rounded text-sm border border-red-200">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-6 p-4 bg-green-50 text-green-700 rounded text-sm border border-green-200">
-          {success}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="email" className="block text-sm font-semibold text-jd-black mb-2">
-            Correo Electrónico
-          </label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="tu@email.com"
-            className="w-full px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-jd-turquoise focus:ring-2 focus:ring-jd-turquoise/20"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password" className="block text-sm font-semibold text-jd-black mb-2">
-            Contraseña
-          </label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="••••••••"
-            className="w-full px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-jd-turquoise focus:ring-2 focus:ring-jd-turquoise/20"
-          />
-        </div>
-
-        {!isLogin && (
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-jd-black mb-2">
-              Confirmar Contraseña
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              className="w-full px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-jd-turquoise focus:ring-2 focus:ring-jd-turquoise/20"
-            />
+      {/* Form Container */}
+      <div className="bg-white rounded-b-2xl shadow-lg p-8">
+        {success && (
+          <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-lg text-sm border border-green-200 flex items-start gap-3">
+            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span>{success}</span>
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2 bg-jd-black text-white font-semibold rounded hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Procesando...' : isLogin ? 'Iniciar Sesión' : 'Registrarse'}
-        </button>
-      </form>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200 flex items-start gap-3">
+            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <span>{error}</span>
+          </div>
+        )}
 
-      <div className="mt-6 pt-6 border-t border-gray-200">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Email */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+              📧 Correo Electrónico
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="tu@correo.com"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-jd-red focus:outline-none transition-colors"
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+              🔒 Contraseña
+            </label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="••••••••"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-jd-red focus:outline-none transition-colors"
+            />
+            {!isLogin && (
+              <p className="text-xs text-gray-500 mt-2">Mínimo 6 caracteres</p>
+            )}
+          </div>
+
+          {/* Confirm Password - Solo en registro */}
+          {!isLogin && (
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
+                🔐 Confirmar Contraseña
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-jd-red focus:outline-none transition-colors"
+              />
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-gradient-to-r from-jd-red to-red-700 text-white font-bold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin">⏳</span>
+                Procesando...
+              </span>
+            ) : isLogin ? (
+              '🔓 Iniciar Sesión'
+            ) : (
+              '✨ Crear Cuenta'
+            )}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500 font-medium">o</span>
+          </div>
+        </div>
+
+        {/* Guest Button */}
         <button
           type="button"
           onClick={handleGuestLogin}
-          className="w-full py-2 border-2 border-jd-turquoise text-jd-turquoise font-semibold rounded hover:bg-jd-turquoise hover:text-white transition"
+          className="w-full py-3 border-2 border-jd-turquoise text-jd-turquoise font-bold rounded-lg hover:bg-teal-50 transition-all duration-200 transform hover:scale-105"
         >
-          Entrar como Invitado
+          ⚡ Continuar como Invitado
         </button>
-      </div>
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600">
-          {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}{' '}
-          <button
-            type="button"
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError('');
-              setSuccess('');
-            }}
-            className="text-jd-black font-semibold hover:text-jd-red transition"
-          >
-            {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
-          </button>
+        {/* Footer Text */}
+        <p className="text-xs text-gray-500 text-center mt-6">
+          Al continuar, aceptas nuestros términos de servicio y política de privacidad
         </p>
       </div>
-
-      {isLogin && (
-        <div className="mt-4 text-center">
-          <a
-            href="#"
-            className="text-xs text-jd-turquoise font-semibold hover:text-jd-black transition"
-          >
-            ¿Olvidaste tu contraseña?
-          </a>
-        </div>
-      )}
     </div>
   );
 }

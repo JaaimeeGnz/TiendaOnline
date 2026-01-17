@@ -1,0 +1,70 @@
+---
+/**
+ * src/pages/marcas/index.astro
+ * Página de marcas disponibles
+ */
+
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import { supabaseClient } from "../../lib/supabase";
+
+// Obtener todos los productos con marcas
+const { data: products } = await supabaseClient
+  .from("products")
+  .select("brand")
+  .eq("is_active", true)
+  .not("brand", "is", null);
+
+// Extraer marcas únicas y ordenarlas
+const brands = [...new Set(products?.map((p) => p.brand).filter(Boolean) || [])]
+  .sort();
+
+// Obtener cantidad de productos por marca
+const brandCounts = brands.reduce((acc, brand) => {
+  acc[brand] = (products?.filter((p) => p.brand === brand) || []).length;
+  return acc;
+}, {} as Record<string, number>);
+---
+
+<PublicLayout title="Marcas - FashionMarket">
+  <div class="bg-jd-gray min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center gap-2 mb-6 text-sm text-gray-500">
+        <a href="/" class="hover:text-jd-black transition">Inicio</a>
+        <span>/</span>
+        <span class="text-jd-black font-bold">Marcas</span>
+      </nav>
+
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-4xl font-black text-jd-black uppercase">Marcas</h1>
+        <p class="text-gray-500 mt-1">Descubre todas nuestras marcas premium</p>
+      </div>
+
+      <!-- Grid de Marcas -->
+      {
+        brands.length > 0 ? (
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {brands.map((brand) => (
+              <a
+                href={`/marcas/${brand.toLowerCase().replace(/\s+/g, "-")}`}
+                class="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow p-6 flex flex-col items-center justify-center text-center min-h-32"
+              >
+                <h3 class="text-2xl font-bold text-jd-black mb-2">{brand}</h3>
+                <p class="text-gray-500">
+                  {brandCounts[brand]} {brandCounts[brand] === 1 ? "producto" : "productos"}
+                </p>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div class="text-center py-12">
+            <p class="text-gray-500 text-lg">
+              No hay marcas disponibles en este momento
+            </p>
+          </div>
+        )
+      }
+    </div>
+  </div>
+</PublicLayout>

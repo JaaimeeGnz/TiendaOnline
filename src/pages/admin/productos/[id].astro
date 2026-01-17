@@ -1,0 +1,287 @@
+---
+/**
+ * src/pages/admin/productos/[id].astro
+ * Página para editar producto existente (SSR)
+ */
+
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import CloudinaryUpload from '../../../components/islands/CloudinaryUpload';
+import { supabaseClient } from '../../../lib/supabase';
+
+// Obtener ID del producto desde params
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/admin/productos');
+}
+
+// Obtener producto
+const { data: product, error: productError } = await supabaseClient
+  .from('products')
+  .select('*')
+  .eq('id', id)
+  .single();
+
+if (productError || !product) {
+  return Astro.redirect('/admin/productos');
+}
+
+// Obtener categorías para el select
+const { data: categories } = await supabaseClient.from('categories').select('*');
+---
+
+<AdminLayout title={`Editar - ${product.name}`}>
+  <div class="mb-8">
+    <a href="/admin/productos" class="text-sm text-primary-600 hover:text-primary-800 mb-4 inline-block">
+      ← Volver a productos
+    </a>
+    <h1 class="text-3xl font-bold text-primary-800">Editar Producto</h1>
+    <p class="text-neutral-gray_dark mt-1">{product.name}</p>
+  </div>
+
+  <div class="max-w-2xl">
+    <form method="POST" action={`/api/admin/products/${id}`} class="bg-white border border-primary-200 rounded-lg p-8 space-y-8">
+      <!-- Nombre -->
+      <div>
+        <label for="name" class="block text-sm font-semibold text-primary-800 mb-2">
+          Nombre del Producto
+        </label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          value={product.name}
+          required
+          class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+        />
+      </div>
+
+      <!-- Descripción -->
+      <div>
+        <label for="description" class="block text-sm font-semibold text-primary-800 mb-2">
+          Descripción
+        </label>
+        <textarea
+          id="description"
+          name="description"
+          required
+          rows="5"
+          class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+        >{product.description}</textarea>
+      </div>
+
+      <!-- Grid de campos -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Precio -->
+        <div>
+          <label for="price_cents" class="block text-sm font-semibold text-primary-800 mb-2">
+            Precio (en céntimos, ej: 5999 = 59,99€)
+          </label>
+          <input
+            type="number"
+            id="price_cents"
+            name="price_cents"
+            value={product.price_cents}
+            required
+            min="0"
+            class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+          />
+        </div>
+
+        <!-- Stock -->
+        <div>
+          <label for="stock" class="block text-sm font-semibold text-primary-800 mb-2">
+            Stock Disponible
+          </label>
+          <input
+            type="number"
+            id="stock"
+            name="stock"
+            value={product.stock}
+            required
+            min="0"
+            class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+          />
+        </div>
+      </div>
+
+      <!-- Categoría -->
+      <div>
+        <label for="category_id" class="block text-sm font-semibold text-primary-800 mb-2">
+          Categoría
+        </label>
+        <select
+          id="category_id"
+          name="category_id"
+          required
+          class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+        >
+          <option value="">-- Selecciona una categoría --</option>
+          {categories?.map((cat) => (
+            <option value={cat.id} selected={cat.id === product.category_id}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <!-- Características adicionales -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label for="color" class="block text-sm font-semibold text-primary-800 mb-2">
+            Color
+          </label>
+          <input
+            type="text"
+            id="color"
+            name="color"
+            value={product.color || ''}
+            class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+          />
+        </div>
+
+        <div>
+          <label for="material" class="block text-sm font-semibold text-primary-800 mb-2">
+            Material
+          </label>
+          <input
+            type="text"
+            id="material"
+            name="material"
+            value={product.material || ''}
+            class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+          />
+        </div>
+      </div>
+
+      <!-- SKU -->
+      <div>
+        <label for="sku" class="block text-sm font-semibold text-primary-800 mb-2">
+          SKU (código único)
+        </label>
+        <input
+          type="text"
+          id="sku"
+          name="sku"
+          value={product.sku || ''}
+          class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+        />
+      </div>
+
+      <!-- Precio Original (para rebajas) -->
+      <div>
+        <label for="original_price_cents" class="block text-sm font-semibold text-primary-800 mb-2">
+          Precio Original (para mostrar descuento) - Dejar en blanco si no hay descuento
+        </label>
+        <input
+          type="number"
+          id="original_price_cents"
+          name="original_price_cents"
+          value={product.original_price_cents || ''}
+          min="0"
+          class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+        />
+      </div>
+
+      <!-- Imágenes -->
+      <div>
+        <label class="block text-sm font-semibold text-primary-800 mb-4">
+          Imágenes del Producto
+        </label>
+
+        <!-- Mostrar imágenes actuales -->
+        {product.images && product.images.length > 0 && (
+          <div class="mb-6">
+            <h4 class="text-sm font-bold text-primary-800 mb-3">Imágenes actuales:</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {product.images.map((url: string, index: number) => (
+                <div class="relative group">
+                  <img
+                    src={url}
+                    alt={`Producto ${index + 1}`}
+                    class="w-full h-24 object-cover rounded border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-xs font-bold"
+                    onclick={`removeImage(${index})`}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <input type="hidden" name="existing_images" value={JSON.stringify(product.images)} />
+          </div>
+        )}
+
+        <!-- Agregar nuevas imágenes -->
+        <div class="mb-4">
+          <h4 class="text-sm font-bold text-primary-800 mb-3">Agregar nuevas imágenes:</h4>
+          <CloudinaryUpload client:load multiple={true} />
+        </div>
+      </div>
+
+      <!-- Destacado -->
+      <div class="flex items-center gap-3">
+        <input
+          type="checkbox"
+          id="featured"
+          name="featured"
+          checked={product.featured}
+          class="w-4 h-4 text-primary-800 border-primary-300 rounded focus:ring-2 focus:ring-primary-600"
+        />
+        <label for="featured" class="text-sm font-medium text-primary-800">
+          Marcar como producto destacado
+        </label>
+      </div>
+
+      <!-- Estado -->
+      <div class="flex items-center gap-3">
+        <input
+          type="checkbox"
+          id="is_active"
+          name="is_active"
+          checked={product.is_active}
+          class="w-4 h-4 text-primary-800 border-primary-300 rounded focus:ring-2 focus:ring-primary-600"
+        />
+        <label for="is_active" class="text-sm font-medium text-primary-800">
+          Producto activo (visible en tienda)
+        </label>
+      </div>
+
+      <!-- Botones -->
+      <div class="flex gap-4 pt-8">
+        <button
+          type="submit"
+          class="flex-1 py-2 bg-blue-600 text-neutral-white font-semibold rounded-sm hover:bg-blue-700 transition"
+        >
+          Guardar Cambios
+        </button>
+        <a
+          href="/admin/productos"
+          class="flex-1 py-2 bg-neutral-gray_light text-neutral-gray_dark font-semibold rounded-sm hover:bg-neutral-gray_medium transition text-center"
+        >
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    function removeImage(index: number) {
+      const existingImagesInput = document.querySelector('input[name="existing_images"]');
+      if (existingImagesInput) {
+        const images = JSON.parse(existingImagesInput.value);
+        images.splice(index, 1);
+        existingImagesInput.value = JSON.stringify(images);
+        // Recargar la página para mostrar cambios
+        location.reload();
+      }
+    }
+  </script>
+
+  <script is:inline src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
+</AdminLayout>

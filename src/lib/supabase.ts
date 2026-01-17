@@ -28,8 +28,14 @@ export const supabaseServer = supabaseServiceRoleKey
 
 // Función auxiliar para obtener la sesión actual del usuario
 export async function getSession() {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  return session;
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    return session;
+  } catch (error) {
+    // En SSR, getSession no funciona correctamente
+    // Devolvemos null y dejamos que el cliente maneje la autenticación
+    return null;
+  }
 }
 
 // Función para verificar si un usuario es admin

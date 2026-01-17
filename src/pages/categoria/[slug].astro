@@ -1,11 +1,12 @@
 ---
 /**
  * src/pages/categoria/[slug].astro
- * Página de listado por categoría (SSG)
+ * Página de listado por categoría con filtros dinámicos
  */
 
 import PublicLayout from '../../layouts/PublicLayout.astro';
 import ProductCard from '../../components/product/ProductCard.astro';
+import ProductFilters from '../../components/islands/ProductFilters';
 import { supabaseClient } from '../../lib/supabase';
 
 // Obtener todas las categorías para generar rutas estáticas
@@ -27,19 +28,68 @@ const { data: category } = await supabaseClient
   .from('categories')
   .select('*')
   .eq('slug', slug)
+  .eq('is_active', true)
   .single();
 
 if (!category) {
   return Astro.redirect('/404');
 }
 
-// Obtener productos de la categoría
-const { data: products } = await supabaseClient
-  .from('products')
-  .select('*')
-  .eq('category_id', category.id)
-  .eq('is_active', true)
-  .order('featured', { ascending: false });
+// Obtener productos
+let products = [];
+let subcategories: any[] = [];
+let uniqueBrands: string[] = [];
+
+// Si es una subcategoría (tiene parent_id), obtener sus productos
+if (category.parent_id) {
+  const { data: subProducts } = await supabaseClient
+    .from('products')
+    .select('*')
+    .eq('category_id', category.id)
+    .eq('is_active', true)
+    .order('featured', { ascending: false })
+    .order('created_at', { ascending: false });
+  
+  products = subProducts || [];
+} else {
+  // Si es categoría principal, obtener productos de todas sus subcategorías o directos
+  const { data: subs } = await supabaseClient
+    .from('categories')
+    .select('*')
+    .eq('parent_id', category.id)
+    .eq('is_active', true)
+    .order('display_order');
+
+  subcategories = subs || [];
+
+  if (subcategories && subcategories.length > 0) {
+    // Tiene subcategorías: obtener productos de las subcategorías
+    const subIds = subcategories.map(s => s.id);
+    const { data: mainProducts } = await supabaseClient
+      .from('products')
+      .select('*')
+      .in('category_id', subIds)
+      .eq('is_active', true)
+      .order('featured', { ascending: false })
+      .order('created_at', { ascending: false });
+    
+    products = mainProducts || [];
+  } else {
+    // No tiene subcategorías: obtener productos directos de esta categoría
+    const { data: directProducts } = await supabaseClient
+      .from('products')
+      .select('*')
+      .eq('category_id', category.id)
+      .eq('is_active', true)
+      .order('featured', { ascending: false })
+      .order('created_at', { ascending: false });
+    
+    products = directProducts || [];
+  }
+}
+
+// Extraer marcas únicas
+uniqueBrands = [...new Set(products.map((p) => p.brand).filter(Boolean))].sort();
 ---
 
 <PublicLayout
@@ -68,34 +118,7 @@ const { data: products } = await supabaseClient
       )}
     </div>
 
-    <!-- Filter bar -->
-    <div class="mb-8 pb-8 border-b border-primary-200 flex items-center justify-between">
-      <span class="text-sm text-neutral-gray_dark">
-        {products?.length || 0} productos disponibles
-      </span>
-    </div>
-
-    <!-- Products Grid -->
-    {products && products.length > 0 ? (
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {products.map((product) => (
-          <ProductCard
-            id={product.id}
-            name={product.name}
-            slug={product.slug}
-            price={product.price_cents}
-            image={product.images?.[0]}
-            stock={product.stock}
-            featured={product.featured}
-          />
-        ))}
-      </div>
-    ) : (
-      <div class="text-center py-20 bg-neutral-gray_light rounded-sm">
-        <p class="text-neutral-gray_dark text-lg">
-          No hay productos en esta categoría
-        </p>
-      </div>
-    )}
+    <!-- Filter bar and products grid -->
+    <ProductFilters client:load products={products} brands={uniqueBrands} />
   </div>
 </PublicLayout>

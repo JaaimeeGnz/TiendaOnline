@@ -1,0 +1,35 @@
+---
+/**
+ * src/pages/login.astro
+ * Página inicial de login - Primera página que ve el usuario
+ */
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import LoginModal from '../components/auth/LoginModal';
+---
+
+<BaseLayout title="Bienvenido a JGMarket - Login">
+  <div class="min-h-screen bg-gradient-to-br from-jd-black via-gray-900 to-jd-red/20 flex items-center justify-center">
+    <LoginModal client:load />
+  </div>
+</BaseLayout>
+
+<style is:global>
+  :root {
+    --jd-black: #000000;
+    --jd-red: #dc2626;
+    --jd-turquoise: #14b8a6;
+  }
+
+  .jd-black {
+    @apply bg-black;
+  }
+
+  .jd-red {
+    @apply text-red-600;
+  }
+
+  .jd-turquoise {
+    @apply text-teal-500;
+  }
+</style>
