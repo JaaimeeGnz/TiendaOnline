@@ -155,24 +155,42 @@ import PublicLayout from "../layouts/PublicLayout.astro";
 
     <script>
         // Cart functionality
-        const CART_KEY = "jgmarket-cart";
+        const CART_KEY = "fashionmarket_cart";
 
         interface CartItem {
             id: string;
             name: string;
-            price: number;
-            image?: string;
+            price_cents: number;
+            image_url?: string;
             quantity: number;
             size?: string;
+            slug?: string;
+            stock?: number;
         }
 
         function getCart(): CartItem[] {
             const stored = localStorage.getItem(CART_KEY);
-            return stored ? JSON.parse(stored) : [];
+            if (!stored) return [];
+            
+            try {
+              const parsed = JSON.parse(stored);
+              // Compatibilidad: si tiene estructura { items: [] }, extrae items
+              if (parsed.items && Array.isArray(parsed.items)) {
+                return parsed.items;
+              }
+              // Si es un array directo
+              return Array.isArray(parsed) ? parsed : [];
+            } catch {
+              return [];
+            }
         }
 
         function saveCart(cart: CartItem[]): void {
-            localStorage.setItem(CART_KEY, JSON.stringify(cart));
+            const state = {
+              items: cart,
+              lastUpdated: Date.now()
+            };
+            localStorage.setItem(CART_KEY, JSON.stringify(state));
             updateCartUI();
             updateHeaderCartCount();
         }
@@ -219,8 +237,8 @@ import PublicLayout from "../layouts/PublicLayout.astro";
         <div class="bg-white rounded p-4 flex gap-4" data-index="${index}">
           <div class="w-24 h-24 bg-jd-gray rounded overflow-hidden flex-shrink-0">
             ${
-                item.image
-                    ? `<img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover"/>`
+                item.image_url
+                    ? `<img src="${item.image_url}" alt="${item.name}" class="w-full h-full object-cover"/>`
                     : `<div class="w-full h-full flex items-center justify-center text-gray-400">
                   <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -231,7 +249,7 @@ import PublicLayout from "../layouts/PublicLayout.astro";
           <div class="flex-1">
             <h4 class="font-bold text-jd-black">${item.name}</h4>
             ${item.size ? `<p class="text-sm text-gray-500">Talla: ${item.size}</p>` : ""}
-            <p class="font-bold text-jd-red mt-1">€${(item.price / 100).toFixed(2)}</p>
+            <p class="font-bold text-jd-red mt-1">€${(item.price_cents / 100).toFixed(2)}</p>
           </div>
           <div class="flex flex-col items-end justify-between">
             <button class="remove-item text-gray-400 hover:text-jd-red transition" data-index="${index}">
@@ -298,7 +316,7 @@ import PublicLayout from "../layouts/PublicLayout.astro";
 
         function updateTotals(cart: CartItem[]): void {
             const subtotal = cart.reduce(
-                (sum, item) => sum + item.price * item.quantity,
+                (sum, item) => sum + item.price_cents * item.quantity,
                 0,
             );
             const subtotalEl = document.getElementById("cart-subtotal");

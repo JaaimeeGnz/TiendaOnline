@@ -68,7 +68,11 @@ export function addToCart(
   item: Omit<CartItem, 'quantity'>,
   quantity: number = 1
 ): void {
+  console.log('📦 addToCart llamado con:', { item, quantity });
+  
   const currentCart = cartStore.get();
+  console.log('📦 Carrito actual:', currentCart);
+  
   const existingItem = currentCart.items.find(
     (i: CartItem) => i.id === item.id && i.size === item.size
   );
@@ -98,8 +102,10 @@ export function addToCart(
     lastUpdated: Date.now(),
   };
 
+  console.log('📦 Nuevo estado del carrito:', newState);
   cartStore.set(newState);
   saveCart(newState);
+  console.log('✅ Carrito guardado en localStorage');
 }
 
 /**

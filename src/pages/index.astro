@@ -6,6 +6,7 @@
 
 import PublicLayout from "../layouts/PublicLayout.astro";
 import ProductCard from "../components/product/ProductCard.astro";
+import NewsletterPopup from "../components/ui/NewsletterPopup.tsx";
 import { supabaseClient } from "../lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 
@@ -357,4 +358,7 @@ const onSale = saleProducts || [];
       </div>
     </div>
   </section>
+
+  <!-- Newsletter Popup -->
+  <NewsletterPopup client:load discount={10} />
 </PublicLayout>

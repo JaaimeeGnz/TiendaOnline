@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { addToCart } from '../../stores/cart';
 import type { CartItem } from '../../stores/cart';
 
@@ -19,22 +19,57 @@ export default function AddToCartButton({
   productSlug,
   price,
   stock,
-  selectedSize,
+  selectedSize: initialSelectedSize,
   imageUrl,
   onAddSuccess,
 }: AddToCartButtonProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState(initialSelectedSize || '');
+
+  // Sincronizar con el select HTML cuando cambia
+  useEffect(() => {
+    const sizeSelect = document.getElementById('size') as HTMLSelectElement;
+    if (sizeSelect) {
+      const handleSizeChange = () => {
+        setSelectedSize(sizeSelect.value);
+      };
+      
+      sizeSelect.addEventListener('change', handleSizeChange);
+      
+      // Obtener valor inicial del select si existe
+      if (sizeSelect.value) {
+        setSelectedSize(sizeSelect.value);
+      }
+      
+      return () => {
+        sizeSelect.removeEventListener('change', handleSizeChange);
+      };
+    }
+  }, []);
 
   const handleAddToCart = async () => {
+    // Obtener valor actual del select
+    const sizeSelect = document.getElementById('size') as HTMLSelectElement;
+    const currentSize = sizeSelect?.value || selectedSize;
+    
+    console.log('🛒 AddToCart Debug:', {
+      selectedSize,
+      currentSize,
+      sizeSelect: sizeSelect?.value,
+      stock
+    });
+    
     // Validaciones
     if (stock === 0) {
+      console.error('❌ Sin stock');
       setFeedback('error');
       return;
     }
 
-    if (!selectedSize) {
+    if (!currentSize || currentSize === '') {
+      console.error('❌ Sin talla seleccionada');
       setFeedback('error');
       return;
     }
@@ -50,13 +85,17 @@ export default function AddToCartButton({
         name: productName,
         slug: productSlug,
         price_cents: price,
-        size: selectedSize,
+        size: currentSize,
         image_url: imageUrl,
         stock,
       };
 
+      console.log('✅ Agregando al carrito:', cartItem);
       addToCart(cartItem, quantity);
       setFeedback('success');
+
+      // Disparar evento personalizado para actualizar el modal del carrito
+      window.dispatchEvent(new CustomEvent('cart-updated', { detail: cartItem }));
 
       // Llamar callback si existe
       onAddSuccess?.();

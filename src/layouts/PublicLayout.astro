@@ -588,6 +588,79 @@ const isMarcas = currentPath.startsWith('/marcas');
     const cartOverlay = document.getElementById("cart-overlay");
     const cartClose = document.getElementById("cart-close");
 
+    // Función para actualizar el modal del carrito
+    function updateCartModal() {
+      const CART_KEY = "fashionmarket_cart";
+      const stored = localStorage.getItem(CART_KEY);
+      const cartItemsEl = document.getElementById('cart-items');
+      const cartTotalEl = document.getElementById('cart-total');
+      const cartCountEl = document.getElementById('cart-count');
+      
+      if (!cartItemsEl || !cartTotalEl) return;
+      
+      let items = [];
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          items = parsed.items || (Array.isArray(parsed) ? parsed : []);
+        } catch (e) {
+          items = [];
+        }
+      }
+      
+      // Actualizar el badge del carrito
+      const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+      if (cartCountEl) {
+        cartCountEl.textContent = itemCount.toString();
+      }
+      
+      if (items.length === 0) {
+        // Carrito vacío
+        cartItemsEl.innerHTML = `
+          <div class="text-center py-12 text-gray-500">
+            <svg
+              class="w-16 h-16 mx-auto text-gray-300 mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1"
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+            <p class="font-bold">Tu carrito está vacío</p>
+            <p class="text-sm mt-1">¡Añade productos para empezar!</p>
+          </div>
+        `;
+        cartTotalEl.textContent = '€0.00';
+      } else {
+        // Mostrar items
+        let subtotal = 0;
+        cartItemsEl.innerHTML = items.map((item) => {
+          const itemPrice = (item.price_cents || item.price || 0) / 100;
+          const itemTotal = itemPrice * item.quantity;
+          subtotal += itemTotal;
+          
+          return `
+            <div class="border-b border-gray-700 pb-4">
+              <div class="flex gap-3">
+                ${item.image_url || item.image ? `<img src="${item.image_url || item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded" />` : '<div class="w-12 h-12 bg-gray-700 rounded"></div>'}
+                <div class="flex-1">
+                  <p class="font-bold text-sm">${item.name}</p>
+                  ${item.size ? `<p class="text-xs text-gray-400">Talla: ${item.size}</p>` : ''}
+                  <p class="text-sm text-jd-red font-bold">€${itemPrice.toFixed(2)} x ${item.quantity}</p>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        cartTotalEl.textContent = `€${(subtotal).toFixed(2)}`;
+      }
+    }
+
     if (cartToggle && cartSidebar && cartOverlay) {
       const toggleCart = () => {
         const isHidden = cartSidebar.classList.contains("translate-x-full");
@@ -595,6 +668,7 @@ const isMarcas = currentPath.startsWith('/marcas');
         if (isHidden) {
           cartOverlay.classList.remove("hidden");
           cartSidebar.classList.remove("translate-x-full");
+          updateCartModal(); // Actualizar modal cuando se abre
         } else {
           cartOverlay.classList.add("hidden");
           cartSidebar.classList.add("translate-x-full");
@@ -616,8 +690,18 @@ const isMarcas = currentPath.startsWith('/marcas');
         }
       });
 
-      // Mostrar indicador de estado de sesión
-      async function updateSessionStatus() {
+      // Actualizar modal cuando cambia localStorage (desde otra pestaña o componente)
+      window.addEventListener('storage', updateCartModal);
+      
+      // Actualizar modal cuando se agrega producto desde AddToCartButton
+      window.addEventListener('cart-updated', updateCartModal);
+      
+      // Actualizar el badge del carrito al cargar la página
+      updateCartModal();
+    }
+
+    // Mostrar indicador de estado de sesión
+    async function updateSessionStatus() {
         const isGuest = localStorage.getItem('isGuest') === 'true';
         
         if (isGuest) {
@@ -638,9 +722,6 @@ const isMarcas = currentPath.startsWith('/marcas');
       }
 
       updateSessionStatus();
-      
-      // Verificar cambios cada segundo (para detectar cuando inicia sesión)
-      setInterval(updateSessionStatus, 1000);
       
       // ===== MANEJO DE ACCOUNT LINK =====
       function updateAccountLinks() {
@@ -779,9 +860,7 @@ const isMarcas = currentPath.startsWith('/marcas');
         });
       }
       
-      // Actualizar links inmediatamente y cada 500ms
+      // Actualizar links inmediatamente
       updateAccountLinks();
-      setInterval(updateAccountLinks, 500);
-    }
   </script>
 </BaseLayout>

@@ -125,13 +125,10 @@ const isLowStock = stock > 0 && stock < 6;
 
     <!-- Quick Add (hover) -->
     <button
-      class="add-to-cart-btn absolute bottom-0 left-0 right-0 py-3 bg-jd-turquoise text-white font-bold text-sm uppercase opacity-0 group-hover:opacity-100 transition-opacity"
-      data-product-id={id}
-      data-product-name={name}
-      data-product-price={price}
-      data-product-image={image || ""}
+      onclick={`window.location.href='/productos/${slug}'`}
+      class="view-product-btn absolute bottom-0 left-0 right-0 py-3 bg-jd-turquoise text-white font-bold text-sm uppercase opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center border-0 cursor-pointer"
     >
-      Añadir al Carrito
+      Ver Producto
     </button>
   </a>
 
@@ -184,79 +181,6 @@ const isLowStock = stock > 0 && stock < 6;
     }
   </div>
 </article>
-
-<script>
-  // Add to cart functionality
-  document.querySelectorAll(".add-to-cart-btn").forEach((button) => {
-    button.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const btn = e.target as HTMLButtonElement;
-      const productId = btn.dataset.productId;
-      const productName = btn.dataset.productName;
-      const productPrice = parseInt(btn.dataset.productPrice || "0");
-      const productImage = btn.dataset.productImage;
-
-      // Get current cart from localStorage
-      const cart = JSON.parse(localStorage.getItem("jgmarket-cart") || "[]");
-
-      // Check if product already in cart
-      const existingIndex = cart.findIndex(
-        (item: any) => item.id === productId,
-      );
-
-      if (existingIndex >= 0) {
-        cart[existingIndex].quantity += 1;
-      } else {
-        cart.push({
-          id: productId,
-          name: productName,
-          price: productPrice,
-          image: productImage,
-          quantity: 1,
-        });
-      }
-
-      // Save to localStorage
-      localStorage.setItem("jgmarket-cart", JSON.stringify(cart));
-
-      // Update cart count
-      const cartCount = document.getElementById("cart-count");
-      if (cartCount) {
-        const totalItems = cart.reduce(
-          (sum: number, item: any) => sum + item.quantity,
-          0,
-        );
-        cartCount.textContent = totalItems.toString();
-      }
-
-      // Visual feedback
-      btn.textContent = "¡Añadido!";
-      btn.classList.remove("bg-jd-turquoise");
-      btn.classList.add("bg-green-500");
-
-      setTimeout(() => {
-        btn.textContent = "Añadir al Carrito";
-        btn.classList.remove("bg-green-500");
-        btn.classList.add("bg-jd-turquoise");
-      }, 1500);
-    });
-  });
-
-  // Initialize cart count on page load
-  document.addEventListener("DOMContentLoaded", () => {
-    const cart = JSON.parse(localStorage.getItem("jgmarket-cart") || "[]");
-    const cartCount = document.getElementById("cart-count");
-    if (cartCount) {
-      const totalItems = cart.reduce(
-        (sum: number, item: any) => sum + item.quantity,
-        0,
-      );
-      cartCount.textContent = totalItems.toString();
-    }
-  });
-</script>
 
 <style>
   .line-clamp-2 {
