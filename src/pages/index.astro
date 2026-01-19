@@ -31,7 +31,8 @@ if (accessToken) {
   }
 }
 
-// La homepage es pública - sin redirección
+// Nota: La redirección a /auth se maneja desde el cliente mediante AccountNav
+// Ya que localStorage puede tener el estado autenticado pero los cookies aún no están listos
 
 // Obtener productos destacados
 const { data: featuredProducts } = await supabaseClient

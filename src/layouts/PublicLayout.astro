@@ -5,6 +5,7 @@
  */
 
 import BaseLayout from "./BaseLayout.astro";
+import AccountNav from "../components/AccountNav";
 
 interface Props {
   title?: string;
@@ -35,14 +36,8 @@ const isMarcas = currentPath.startsWith('/marcas');
             >Ayuda</a
           >
         </div>
-        <div class="flex items-center gap-6 ml-auto" id="account-links">
-          <a href="/auth" class="hover:text-jd-turquoise transition" id="account-link">Mi cuenta</a>
-          <button 
-            id="logout-btn"
-            class="hover:text-jd-turquoise transition cursor-pointer bg-transparent border-none text-white p-0 hidden"
-          >
-            Cerrar Sesión
-          </button>
+        <div class="flex items-center gap-6 ml-auto">
+          <AccountNav client:load />
         </div>
       </div>
     </div>
@@ -711,7 +706,7 @@ const isMarcas = currentPath.startsWith('/marcas');
           const badge = document.createElement('div');
           badge.id = 'guest-badge';
           badge.className = 'fixed top-24 right-4 bg-yellow-100 border-2 border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg text-sm font-semibold z-50';
-          badge.innerHTML = '👤 Navegando como Invitado';
+          badge.innerHTML = 'Navegando como Invitado';
           document.body.appendChild(badge);
         }
       } else {
@@ -723,43 +718,30 @@ const isMarcas = currentPath.startsWith('/marcas');
 
     updateSessionStatus();
     
-    // ===== MANEJO DE ACCOUNT LINK =====
-    function updateAccountLinks() {
+    // Verificar si debe redirigir a /auth (validar autenticación desde cliente)
+    // Esto es para casos donde el server-side check falló pero localStorage indica que está autenticado
+    function checkAuthenticationRedirect() {
+      const currentPath = window.location.pathname;
+      
+      // Si está en /auth, /login o /register, no verificar redirección
+      if (currentPath === '/auth' || currentPath === '/login' || currentPath === '/register') {
+        return;
+      }
+      
       const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
       const isGuest = localStorage.getItem('isGuest') === 'true';
-      const accountLink = document.getElementById('account-link');
-      const logoutBtn = document.getElementById('logout-btn');
       
-      console.log('🔍 updateAccountLinks:', {
-        isAuthenticated,
-        isGuest,
-        localStorageContent: {
-          isAuthenticated: localStorage.getItem('isAuthenticated'),
-          isGuest: localStorage.getItem('isGuest'),
-          userEmail: localStorage.getItem('userEmail')
-        }
-      });
-      
-      if (accountLink && logoutBtn) {
-        if (isAuthenticated && !isGuest) {
-          // Usuario autenticado - mostrar link a /account y botón de logout
-          console.log('✅ Usuario autenticado - mostrando account link');
-          accountLink.href = '/account';
-          accountLink.textContent = 'Mi cuenta';
-          accountLink.setAttribute('href', '/account');
-          logoutBtn.classList.remove('hidden');
-          console.log('🔗 Href actualizado a:', accountLink.href, accountLink.getAttribute('href'));
-        } else {
-          // Usuario no autenticado - mostrar link a /auth
-          console.log('❌ Usuario NO autenticado - mostrando auth link');
-          accountLink.href = '/auth';
-          accountLink.textContent = 'Mi cuenta';
-          accountLink.setAttribute('href', '/auth');
-          logoutBtn.classList.add('hidden');
-          console.log('🔗 Href actualizado a:', accountLink.href, accountLink.getAttribute('href'));
-        }
+      // Si no está autenticado y no es invitado, permitir que continúe
+      // (el server ya habrá redirigido si es necesario)
+      // Esto es un backup para casos de timing
+      if (!isAuthenticated && !isGuest) {
+        // No hacer nada aquí - el servidor ya se encargó
+        console.log('⚠️ No autenticado, servidor debería haber redirigido');
       }
     }
+    
+    // Ejecutar verificación después de que DOM esté listo
+    checkAuthenticationRedirect();
     
     // Crear modal de confirmación personalizado
     function showLogoutConfirmModal() {
@@ -859,8 +841,5 @@ const isMarcas = currentPath.startsWith('/marcas');
         window.location.href = '/login';
       });
     }
-    
-    // Actualizar links inmediatamente
-    updateAccountLinks();
   </script>
 </BaseLayout>

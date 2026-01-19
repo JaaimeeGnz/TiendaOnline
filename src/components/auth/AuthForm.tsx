@@ -48,6 +48,9 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
         localStorage.removeItem('isGuest');
         localStorage.removeItem('guestLoginTime');
 
+        // Disparar evento para sincronizar otros componentes
+        window.dispatchEvent(new Event('auth-changed'));
+
         // Determinar si es admin
         const isAdmin = email.toLowerCase() === 'jaimechipiona2006@gmail.com';
         console.log('Es Admin:', isAdmin);
@@ -101,6 +104,14 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
           console.log('Auto-login exitoso');
           localStorage.removeItem('isGuest');
           localStorage.removeItem('guestLoginTime');
+          
+          // Guardar estado autenticado
+          localStorage.setItem('isAuthenticated', 'true');
+          localStorage.setItem('userEmail', signInData.user?.email || '');
+          
+          // Disparar evento para sincronizar otros componentes
+          window.dispatchEvent(new Event('auth-changed'));
+          
           setSuccess('¡Bienvenido!');
 
           setTimeout(() => {
