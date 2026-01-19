@@ -23,14 +23,14 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
     try {
       if (isLogin) {
         // LOGIN
-        console.log('🔑 Intentando login con:', email);
+        console.log('Intentando login con:', email);
         const { data, error: signInError } = await supabaseClient.auth.signInWithPassword({
           email,
           password,
         });
 
         if (signInError) {
-          console.error('❌ Error login:', signInError);
+          console.error('Error login:', signInError);
           throw signInError;
         }
 
@@ -38,7 +38,7 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
           throw new Error('No se recibieron datos del usuario');
         }
 
-        console.log('✅ Login exitoso para:', data.user.email);
+        console.log('Login exitoso para:', data.user.email);
         
         // Guardar estado autenticado
         localStorage.setItem('isAuthenticated', 'true');
@@ -50,19 +50,19 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
 
         // Determinar si es admin
         const isAdmin = email.toLowerCase() === 'jaimechipiona2006@gmail.com';
-        console.log('👤 Es Admin:', isAdmin);
+        console.log('Es Admin:', isAdmin);
 
-        setSuccess('¡Bienvenido! 👋');
+        setSuccess('¡Bienvenido!');
 
         // Redirigir inmediatamente
         setTimeout(() => {
           const redirectUrl = isAdmin ? '/admin' : '/';
-          console.log('🔄 Redirigiendo a:', redirectUrl);
+          console.log('Redirigiendo a:', redirectUrl);
           window.location.href = redirectUrl;
         }, 300);
       } else {
         // REGISTRO
-        console.log('📝 Intentando registrar:', email);
+        console.log('Intentando registrar:', email);
         
         if (password !== confirmPassword) {
           throw new Error('Las contraseñas no coinciden');
@@ -78,11 +78,11 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
         });
 
         if (signUpError) {
-          console.error('❌ Error registro:', signUpError);
+          console.error('Error registro:', signUpError);
           throw signUpError;
         }
 
-        console.log('✅ Registro exitoso');
+        console.log('Registro exitoso');
         
         // Intentar auto-login después del registro
         const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
@@ -98,20 +98,20 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
             setConfirmPassword('');
           }, 2000);
         } else {
-          console.log('✅ Auto-login exitoso');
+          console.log('Auto-login exitoso');
           localStorage.removeItem('isGuest');
           localStorage.removeItem('guestLoginTime');
-          setSuccess('¡Bienvenido! 👋');
+          setSuccess('¡Bienvenido!');
 
           setTimeout(() => {
             const redirectUrl = '/';
-            console.log('🔄 Redirigiendo a:', redirectUrl);
+            console.log('Redirigiendo a:', redirectUrl);
             window.location.href = redirectUrl;
           }, 300);
         }
       }
     } catch (err: any) {
-      console.error('❌ Error:', err);
+      console.error('Error:', err);
       setError(err.message || 'Error desconocido');
     } finally {
       setLoading(false);
@@ -182,7 +182,7 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
           {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-              📧 Correo Electrónico
+              Correo Electrónico
             </label>
             <input
               type="email"
@@ -198,7 +198,7 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
           {/* Password */}
           <div>
             <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-              🔒 Contraseña
+              Contraseña
             </label>
             <input
               type="password"
@@ -218,7 +218,7 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
           {!isLogin && (
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
-                🔐 Confirmar Contraseña
+                Confirmar Contraseña
               </label>
               <input
                 type="password"
@@ -244,9 +244,9 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
                 Procesando...
               </span>
             ) : isLogin ? (
-              '🔓 Iniciar Sesión'
+              'Iniciar Sesión'
             ) : (
-              '✨ Crear Cuenta'
+              'Crear Cuenta'
             )}
           </button>
         </form>
@@ -267,7 +267,7 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
           onClick={handleGuestLogin}
           className="w-full py-3 border-2 border-teal-500 text-teal-600 font-bold rounded-lg hover:bg-teal-50 transition-all duration-200 transform hover:scale-105"
         >
-          ⚡ Continuar como Invitado
+          Continuar como Invitado
         </button>
 
         {/* Footer Text */}
