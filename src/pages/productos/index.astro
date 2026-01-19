@@ -27,7 +27,26 @@ let pageTitle = "Todos los Productos";
 let mainCategoryId: string | null = null;
 let subcategories: any[] = [];
 
-if (categorySlug) {
+// Verificar si es la categoría especial "rebajas"
+const isRebajasCategory = categorySlug === 'rebajas';
+
+if (isRebajasCategory) {
+  // Mostrar productos con descuento (donde original_price_cents > price_cents)
+  const { data: rebajasProducts } = await supabaseClient
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .order("featured", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  // Filtrar solo productos que tienen descuento
+  products = rebajasProducts?.filter(p => 
+    p.original_price_cents && p.original_price_cents > p.price_cents
+  ) || [];
+  
+  categoryName = "Rebajas";
+  pageTitle = "REBAJAS";
+} else if (categorySlug) {
   // Obtener categoría (puede ser principal o subcategoría)
   const { data: category } = await supabaseClient
     .from("categories")

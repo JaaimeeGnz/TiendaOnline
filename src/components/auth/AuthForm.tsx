@@ -2,12 +2,10 @@ import { useState } from 'react';
 import { supabaseClient } from '../../lib/supabase';
 
 interface AuthFormProps {
-  onSuccess?: (user: any) => void;
-  onGuestLogin?: () => void;
   initialTab?: 'login' | 'register';
 }
 
-export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login' }: AuthFormProps) {
+export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
   const [isLogin, setIsLogin] = useState(initialTab === 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,40 +23,47 @@ export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login'
     try {
       if (isLogin) {
         // LOGIN
+        console.log('🔑 Intentando login con:', email);
         const { data, error: signInError } = await supabaseClient.auth.signInWithPassword({
           email,
           password,
         });
 
         if (signInError) {
+          console.error('❌ Error login:', signInError);
           throw signInError;
         }
 
-        const adminEmail = email.toLowerCase() === 'jaimechipiona2006@gmail.com';
-        
-        if (adminEmail) {
-          setSuccess('¡Bienvenido Admin! 🎉');
-          if (onSuccess) {
-            setTimeout(() => {
-              onSuccess(data?.user);
-            }, 800);
-          }
-          setTimeout(() => {
-            window.location.href = '/admin';
-          }, 1500);
-        } else {
-          setSuccess('¡Bienvenido! 👋');
-          if (onSuccess) {
-            setTimeout(() => {
-              onSuccess(data?.user);
-            }, 800);
-          }
-          setTimeout(() => {
-            window.location.href = '/productos';
-          }, 1500);
+        if (!data.user) {
+          throw new Error('No se recibieron datos del usuario');
         }
+
+        console.log('✅ Login exitoso para:', data.user.email);
+        
+        // Guardar estado autenticado
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userEmail', data.user.email);
+        
+        // Limpiar flags de invitado
+        localStorage.removeItem('isGuest');
+        localStorage.removeItem('guestLoginTime');
+
+        // Determinar si es admin
+        const isAdmin = email.toLowerCase() === 'jaimechipiona2006@gmail.com';
+        console.log('👤 Es Admin:', isAdmin);
+
+        setSuccess('¡Bienvenido! 👋');
+
+        // Redirigir inmediatamente
+        setTimeout(() => {
+          const redirectUrl = isAdmin ? '/admin' : '/';
+          console.log('🔄 Redirigiendo a:', redirectUrl);
+          window.location.href = redirectUrl;
+        }, 300);
       } else {
         // REGISTRO
+        console.log('📝 Intentando registrar:', email);
+        
         if (password !== confirmPassword) {
           throw new Error('Las contraseñas no coinciden');
         }
@@ -67,40 +72,46 @@ export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login'
           throw new Error('La contraseña debe tener al menos 6 caracteres');
         }
 
-        const { data, error: signUpError } = await supabaseClient.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
           email,
           password,
         });
 
         if (signUpError) {
+          console.error('❌ Error registro:', signUpError);
           throw signUpError;
         }
 
+        console.log('✅ Registro exitoso');
+        
+        // Intentar auto-login después del registro
         const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
           email,
           password,
         });
 
         if (signInError) {
-          setSuccess('¡Cuenta creada! Por favor, inicia sesión con tus credenciales.');
+          setSuccess('¡Cuenta creada! Por favor, inicia sesión.');
           setTimeout(() => {
             setIsLogin(true);
             setPassword('');
             setConfirmPassword('');
           }, 2000);
-        } else if (signInData.user) {
-          setSuccess('¡Bienvenido!');
-          if (onSuccess) {
-            setTimeout(() => {
-              onSuccess(signInData?.user);
-            }, 800);
-          }
+        } else {
+          console.log('✅ Auto-login exitoso');
+          localStorage.removeItem('isGuest');
+          localStorage.removeItem('guestLoginTime');
+          setSuccess('¡Bienvenido! 👋');
+
           setTimeout(() => {
-            window.location.href = '/productos';
-          }, 1500);
+            const redirectUrl = '/';
+            console.log('🔄 Redirigiendo a:', redirectUrl);
+            window.location.href = redirectUrl;
+          }, 300);
         }
       }
     } catch (err: any) {
+      console.error('❌ Error:', err);
       setError(err.message || 'Error desconocido');
     } finally {
       setLoading(false);
@@ -110,9 +121,6 @@ export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login'
   const handleGuestLogin = () => {
     localStorage.setItem('isGuest', 'true');
     localStorage.setItem('guestLoginTime', new Date().toISOString());
-    if (onGuestLogin) {
-      onGuestLogin();
-    }
     window.location.href = '/productos';
   };
 
@@ -128,7 +136,7 @@ export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login'
           }}
           className={`flex-1 py-4 font-bold transition-all duration-200 ${
             isLogin
-              ? 'bg-gradient-to-r from-jd-red to-red-700 text-white'
+              ? 'bg-gradient-to-r from-red-600 to-red-700 text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -142,7 +150,7 @@ export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login'
           }}
           className={`flex-1 py-4 font-bold transition-all duration-200 ${
             !isLogin
-              ? 'bg-gradient-to-r from-jd-red to-red-700 text-white'
+              ? 'bg-gradient-to-r from-red-600 to-red-700 text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -183,7 +191,7 @@ export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login'
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="tu@correo.com"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-jd-red focus:outline-none transition-colors"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:outline-none transition-colors"
             />
           </div>
 
@@ -199,7 +207,7 @@ export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login'
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-jd-red focus:outline-none transition-colors"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:outline-none transition-colors"
             />
             {!isLogin && (
               <p className="text-xs text-gray-500 mt-2">Mínimo 6 caracteres</p>
@@ -219,7 +227,7 @@ export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login'
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-jd-red focus:outline-none transition-colors"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:outline-none transition-colors"
               />
             </div>
           )}
@@ -228,7 +236,7 @@ export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login'
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-jd-red to-red-700 text-white font-bold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+            className="w-full py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -257,7 +265,7 @@ export default function AuthForm({ onSuccess, onGuestLogin, initialTab = 'login'
         <button
           type="button"
           onClick={handleGuestLogin}
-          className="w-full py-3 border-2 border-jd-turquoise text-jd-turquoise font-bold rounded-lg hover:bg-teal-50 transition-all duration-200 transform hover:scale-105"
+          className="w-full py-3 border-2 border-teal-500 text-teal-600 font-bold rounded-lg hover:bg-teal-50 transition-all duration-200 transform hover:scale-105"
         >
           ⚡ Continuar como Invitado
         </button>

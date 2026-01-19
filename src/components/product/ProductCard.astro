@@ -5,30 +5,53 @@
  */
 
 interface Props {
-  id: string;
-  name: string;
-  slug: string;
-  price: number;
+  product?: any;
+  id?: string;
+  name?: string;
+  slug?: string;
+  price?: number;
   originalPrice?: number | null;
   image?: string;
-  stock: number;
+  stock?: number;
   featured?: boolean;
   brand?: string;
   onSale?: boolean;
+}
+
+const props = Astro.props;
+
+// Soportar tanto props individuales como producto completo
+let productData = props.product;
+if (!productData) {
+  productData = {
+    id: props.id,
+    name: props.name,
+    slug: props.slug,
+    price_cents: props.price,
+    original_price_cents: props.originalPrice,
+    images: props.image ? [props.image] : [],
+    stock: props.stock,
+    featured: props.featured,
+    brand: props.brand,
+  };
 }
 
 const {
   id,
   name,
   slug,
-  price,
-  originalPrice,
-  image,
+  price_cents,
+  original_price_cents,
+  images,
   stock,
   featured,
   brand,
-  onSale,
-} = Astro.props;
+} = productData;
+
+const image = images?.[0] || props.image;
+const price = price_cents || props.price;
+const originalPrice = original_price_cents || props.originalPrice;
+const onSale = props.onSale || (originalPrice && originalPrice > price);
 
 // Calcular descuento
 const hasDiscount = originalPrice && originalPrice > price;

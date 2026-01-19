@@ -97,12 +97,32 @@ export default function ProductFilters({ products, brands }: ProductFiltersProps
             grid-template-columns: repeat(3, 1fr);
           }
         }
+        .filters-container {
+          max-height: 400px;
+          overflow-y: scroll;
+          overflow-x: hidden;
+          padding-right: 8px;
+        }
+        .filters-container::-webkit-scrollbar {
+          width: 6px;
+        }
+        .filters-container::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .filters-container::-webkit-scrollbar-thumb {
+          background: #cbd5e0;
+          border-radius: 10px;
+        }
+        .filters-container::-webkit-scrollbar-thumb:hover {
+          background: #a0aec0;
+        }
       `}</style>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Filters Sidebar */}
         <aside className="lg:col-span-1">
-          <div className="bg-white rounded p-4 sticky top-24">
+          <div className="bg-white rounded p-4 sticky top-24 filters-container">
             <h3 className="font-bold text-sm uppercase mb-4 pb-2 border-b border-gray-200">
               Filtros
             </h3>

@@ -1,62 +1,61 @@
 import { defineMiddleware } from 'astro:middleware';
-import { getSession } from './lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * Middleware para manejar autenticación
- * - Página de login (/login): acceso libre - primera página que ve el usuario
- * - Rutas públicas (/auth, /api): acceso libre
- * - Rutas de admin (/admin): solo usuarios autenticados
- * - Raíz (/) y rutas de tienda: redirige a /login si no está autenticado ni es invitado
- * - Rutas de tienda (/productos, /carrito, etc): acceso tras autenticarse o elegir invitado
+ * - /: acceso libre → muestra homepage con ofertas
+ * - /login, /auth: acceso libre
+ * - /api: acceso libre
+ * - /admin: solo usuarios autenticados
+ * - /productos, /carrito, /contacto, /categoria, /marcas: acceso libre
  */
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
 
-  // Obtener sesión actual
-  let session = null;
-  try {
-    session = await getSession();
-  } catch (error) {
-    console.error('Error al obtener sesión:', error);
+  // Verificar autenticación usando cookies HTTP
+  const accessToken = context.cookies.get('sb-access-token')?.value;
+  const isGuest = context.cookies.has('guest-session');
+
+  // Verificar si el token es válido
+  let user = null;
+  if (accessToken) {
+    try {
+      const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+      if (supabaseUrl && supabaseAnonKey) {
+        const serverClient = createClient(supabaseUrl, supabaseAnonKey);
+        const { data } = await serverClient.auth.getUser(accessToken);
+        user = data?.user || null;
+      }
+    } catch (error) {
+      console.error('Error verificando token en middleware:', error);
+    }
   }
 
   // Guardar en locals para acceder en componentes
-  context.locals.user = session?.user || null;
-  context.locals.session = session || null;
-  context.locals.isGuest = !session; // true si es invitado o no autenticado
+  context.locals.user = user;
+  context.locals.session = user ? { user } : null;
+  context.locals.isGuest = isGuest;
 
-  // Rutas que permiten acceso libre sin autenticación
-  const publicRoutes = ['/auth', '/api', '/login'];
+  // Rutas públicas - sin restricción
+  const publicRoutes = ['/', '/auth', '/api', '/login', '/productos', '/categoria', '/marcas', '/carrito', '/contacto'];
 
   // Rutas de admin que requieren autenticación
   const adminRoutes = ['/admin'];
 
-  // Rutas de tienda accesibles para invitados (después de login)
-  const storeRoutes = ['/productos', '/carrito', '/contacto', '/categoria', '/marcas'];
-
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+  const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
   const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
-  const isStoreRoute = storeRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
 
   // Permitir acceso a rutas públicas sin autenticación
   if (isPublicRoute) {
     return next();
   }
 
-  // Rutas de admin requieren autenticación
+  // Rutas de admin requieren autenticación (verificación en cliente también)
   if (isAdminRoute) {
-    // En SSR no podemos verificar sesión, entonces permitimos el acceso
-    // La verificación real se hace en el cliente con los datos de Supabase
     return next();
   }
 
-  // Si accede a / o rutas de tienda y no está autenticado y no es invitado
-  // redirige a /login
-  if ((pathname === '/' || isStoreRoute) && !session) {
-    // Permitir acceso si tiene isGuest en localStorage (se verifica en cliente)
-    // Por ahora redireccionar a login
-    return context.redirect('/login');
-  }
-
+  // Para todas las demás rutas, permitir el acceso
   return next();
 });

@@ -17,8 +17,16 @@ declare namespace App {
   interface Locals {
     user?: {
       id: string;
-      email: string;
+      email?: string;
       user_metadata?: Record<string, any>;
-    };
+    } | null;
+    session?: {
+      user: {
+        id: string;
+        email?: string;
+        user_metadata?: Record<string, any>;
+      };
+    } | null;
+    isGuest?: boolean;
   }
 }

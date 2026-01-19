@@ -11,12 +11,13 @@ export default function LoginModal() {
   const [showRegisterForm, setShowRegisterForm] = useState(false);
 
   const handleGuestLogin = () => {
-    // Guardar que el usuario es invitado en localStorage
+    // Guardar en localStorage
     localStorage.setItem('isGuest', 'true');
     localStorage.setItem('guestLoginTime', new Date().toISOString());
     
-    // Redirigir a la página principal
-    window.location.href = '/';
+    // Redirigir directamente a /productos
+    // El middleware ahora verifica el localStorage en el cliente
+    window.location.href = '/productos?guest=true';
   };
 
   // Si el usuario elige login o registro, mostrar el formulario de autenticación
