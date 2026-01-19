@@ -17,9 +17,12 @@ export default function NewsletterPopup({ discount = 10 }: NewsletterPopupProps)
   // Mostrar popup después de 3 segundos de que cargue la página
   useEffect(() => {
     const timer = setTimeout(() => {
-      // No mostrar si ya se suscribió antes (localStorage)
-      if (!localStorage.getItem('newsletter_subscribed')) {
+      // No mostrar si ya se vio el popup antes en esta sesión
+      const popupViewed = sessionStorage.getItem('newsletter_popup_viewed');
+      if (!popupViewed) {
         setIsOpen(true);
+        // Marcar que el popup fue visto
+        sessionStorage.setItem('newsletter_popup_viewed', 'true');
       }
     }, 3000);
 
