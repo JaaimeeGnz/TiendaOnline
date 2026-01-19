@@ -87,6 +87,26 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
 
         console.log('Registro exitoso');
         
+        // Enviar email de registro
+        try {
+          const emailResponse = await fetch('/api/email/send-registration', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: email,
+              userName: email.split('@')[0]
+            })
+          });
+          
+          if (emailResponse.ok) {
+            console.log('✅ Email de registro enviado');
+          } else {
+            console.warn('⚠️ Error enviando email de registro:', await emailResponse.text());
+          }
+        } catch (emailError) {
+          console.error('❌ Error en llamada a send-registration:', emailError);
+        }
+        
         // Intentar auto-login después del registro
         const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
           email,

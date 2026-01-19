@@ -54,9 +54,30 @@ export default function NewsletterPopup({ discount = 10 }: NewsletterPopupProps)
 
       if (result.success) {
         setSuccess(true);
-        setDiscountCode(result.discountCode || '');
+        setDiscountCode(result.discountCode || 'BIENVENIDA10');
         setMessage(result.message);
         localStorage.setItem('newsletter_subscribed', 'true');
+        
+        // Enviar email de bienvenida al newsletter
+        try {
+          const emailResponse = await fetch('/api/email/send-newsletter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: email,
+              discountCode: result.discountCode || 'BIENVENIDA10'
+            })
+          });
+          
+          if (emailResponse.ok) {
+            console.log('✅ Email de newsletter enviado');
+          } else {
+            console.warn('⚠️ Error enviando email de newsletter:', await emailResponse.text());
+          }
+        } catch (emailError) {
+          console.error('❌ Error en llamada a send-newsletter:', emailError);
+        }
+        
         setEmail('');
       } else {
         setSuccess(false);

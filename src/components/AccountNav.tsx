@@ -8,14 +8,17 @@ import { useState, useEffect } from 'react';
 export default function AccountNav() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   useEffect(() => {
-    // Verificar estado inicial
+    // Verificar estado inicial desde localStorage
+    // localStorage es la fuente de verdad para la sesión actual
     const checkAuth = () => {
       const auth = localStorage.getItem('isAuthenticated') === 'true';
       const guest = localStorage.getItem('isGuest') === 'true';
       setIsAuthenticated(auth);
       setIsGuest(guest);
+      setHasCheckedAuth(true);
       console.log('🔍 AccountNav: auth=', auth, 'guest=', guest);
     };
 
@@ -47,29 +50,21 @@ export default function AccountNav() {
 
   useEffect(() => {
     // Redireccionar a /auth si no está autenticado y no es invitado
-    // Solo redirigir después de un delay para que localStorage se estabilice
+    // PERO SOLO después de verificar localStorage (hasCheckedAuth = true)
     const currentPath = window.location.pathname;
     const isAuthPage = currentPath === '/auth' || currentPath === '/login' || currentPath === '/register';
     
-    // No redirigir si ya estamos en página de auth o si es root /
-    if (isAuthPage || currentPath === '/') {
-      // En /, haremos la redirección basada en localStorage directamente
-      if (currentPath === '/' && !isAuthPage) {
-        const timer = setTimeout(() => {
-          const auth = localStorage.getItem('isAuthenticated') === 'true';
-          const guest = localStorage.getItem('isGuest') === 'true';
-          
-          // Solo redirigir si REALMENTE no está autenticado ni es invitado
-          if (!auth && !guest) {
-            console.log('📍 Redirigiendo a /auth - no autenticado (desde AccountNav)');
-            window.location.href = '/auth';
-          }
-        }, 100); // Delay para que localStorage se estabilice
-        
-        return () => clearTimeout(timer);
-      }
+    // Si aún no hemos verificado localStorage, no redirigir
+    if (!hasCheckedAuth) {
+      return;
     }
-  }, []);
+    
+    // Solo redirigir desde / si realmente no está autenticado
+    if (currentPath === '/' && !isAuthPage && !isAuthenticated && !isGuest) {
+      console.log('📍 Redirigiendo a /auth - no autenticado');
+      window.location.href = '/auth';
+    }
+  }, [isAuthenticated, isGuest, hasCheckedAuth]);
 
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
