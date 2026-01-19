@@ -13,7 +13,23 @@ const message = Astro.url.searchParams.get('message');
 
 <BaseLayout title="Autenticación - JGMarket">
   <div class="min-h-screen bg-gradient-to-br from-jd-black to-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-    <AuthForm client:load />
+    <div class="w-full max-w-md">
+      <!-- Branding -->
+      <div class="text-center mb-8">
+        <h1 class="text-4xl sm:text-5xl font-black text-white tracking-tight mb-3">
+          JG<span class="text-jd-red">Market</span>
+        </h1>
+        <p class="text-jd-turquoise text-lg font-semibold mb-1">
+          La mejor moda deportiva actual
+        </p>
+        <p class="text-gray-400 text-sm">
+          Zapatillas y ropa deportiva de las mejores marcas
+        </p>
+      </div>
+      
+      <!-- Auth Form -->
+      <AuthForm client:load />
+    </div>
   </div>
 </BaseLayout>
 
