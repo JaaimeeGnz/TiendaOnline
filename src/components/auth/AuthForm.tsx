@@ -8,6 +8,7 @@ interface AuthFormProps {
 export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
   const [isLogin, setIsLogin] = useState(initialTab === 'login');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -67,6 +68,19 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
         // REGISTRO
         console.log('Intentando registrar:', email);
         
+        // Validar nombre de usuario
+        if (!username || username.trim().length === 0) {
+          throw new Error('El nombre de usuario es requerido');
+        }
+        
+        if (username.length < 3) {
+          throw new Error('El nombre de usuario debe tener al menos 3 caracteres');
+        }
+        
+        if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+          throw new Error('El nombre de usuario solo puede contener letras, números, guiones y guiones bajos');
+        }
+        
         if (password !== confirmPassword) {
           throw new Error('Las contraseñas no coinciden');
         }
@@ -87,6 +101,31 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
 
         console.log('Registro exitoso');
         
+        // Guardar nombre de usuario en la tabla users
+        if (signUpData.user?.id) {
+          try {
+            const { error: insertError } = await supabaseClient
+              .from('users')
+              .insert({
+                id: signUpData.user.id,
+                email: email,
+                username: username.toLowerCase().trim(),
+              });
+            
+            if (insertError) {
+              console.error('Error guardando username:', insertError);
+              if (insertError.code === '23505') { // Violación de restricción única
+                throw new Error('Este nombre de usuario ya está en uso');
+              }
+              throw insertError;
+            }
+            console.log('✅ Usuario registrado en tabla users');
+          } catch (dbError: any) {
+            console.error('❌ Error al guardar usuario:', dbError);
+            throw new Error(dbError.message || 'Error al guardar el perfil del usuario');
+          }
+        }
+        
         // Enviar email de registro
         try {
           const emailResponse = await fetch('/api/email/send-registration', {
@@ -94,7 +133,7 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               email: email,
-              userName: email.split('@')[0]
+              userName: username
             })
           });
           
@@ -128,6 +167,7 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
           // Guardar estado autenticado
           localStorage.setItem('isAuthenticated', 'true');
           localStorage.setItem('userEmail', signInData.user?.email || '');
+          localStorage.setItem('userName', username);
           
           // Disparar evento para sincronizar otros componentes
           window.dispatchEvent(new Event('auth-changed'));
@@ -225,6 +265,25 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:outline-none transition-colors"
             />
           </div>
+
+          {/* Username - Solo en registro */}
+          {!isLogin && (
+            <div>
+              <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-2">
+                Nombre de Usuario
+              </label>
+              <input
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required={!isLogin}
+                placeholder="mi_usuario"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:outline-none transition-colors"
+              />
+              <p className="text-xs text-gray-500 mt-2">Mínimo 3 caracteres. Solo letras, números, guiones y guiones bajos</p>
+            </div>
+          )}
 
           {/* Password */}
           <div>

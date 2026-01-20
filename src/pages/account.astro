@@ -169,7 +169,21 @@ import PublicLayout from '../layouts/PublicLayout.astro';
         const userCreatedEl = document.getElementById('userCreated');
         
         if (userEmailEl) userEmailEl.textContent = session.user.email || 'No disponible';
-        if (userNameEl) userNameEl.textContent = session.user.user_metadata?.full_name || 'No configurado';
+        
+        // Traer el username desde la tabla users
+        if (userNameEl) {
+          const { data: userData, error } = await supabaseClient
+            .from('users')
+            .select('username')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (userData && userData.username) {
+            userNameEl.textContent = userData.username;
+          } else {
+            userNameEl.textContent = 'No configurado';
+          }
+        }
         
         if (userCreatedEl) {
           const createdDate = new Date(session.user.created_at).toLocaleDateString('es-ES', {

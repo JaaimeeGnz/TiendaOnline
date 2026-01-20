@@ -16,11 +16,12 @@ const { title, description } = Astro.props;
 
 // Obtener la ruta actual para resaltar el menú activo
 const currentPath = new URL(Astro.request.url).pathname;
+const currentUrl = new URL(Astro.request.url);
 const isProductos = currentPath === '/productos';
 const isZapatillas = currentPath.startsWith('/categoria/zapatillas');
 const isRopa = currentPath.startsWith('/categoria/ropa');
 const isAccesorios = currentPath.startsWith('/categoria/accesorios');
-const isRebajas = currentPath.startsWith('/categoria/rebajas');
+const isRebajas = currentPath === '/productos' && currentUrl.searchParams.get('categoria') === 'rebajas';
 const isMarcas = currentPath.startsWith('/marcas');
 ---
 
@@ -197,7 +198,7 @@ const isMarcas = currentPath.startsWith('/marcas');
             </li>
             <li>
               <a
-                href="/categoria/rebajas"
+                href="/productos?categoria=rebajas"
                 class={`text-sm font-bold uppercase hover:text-jd-red transition ${isRebajas ? 'text-jd-red' : 'text-jd-black'}`}
               >
                 Rebajas
@@ -246,7 +247,7 @@ const isMarcas = currentPath.startsWith('/marcas');
             Accesorios
           </a>
           <a
-            href="/categoria/rebajas"
+            href="/productos?categoria=rebajas"
             class={`text-sm font-bold uppercase py-2 ${isRebajas ? 'text-jd-red' : 'text-jd-black'}`}
           >
             Rebajas

@@ -9,9 +9,16 @@ import ProductCard from "../../components/product/ProductCard.astro";
 import ProductFilters from "../../components/islands/ProductFilters";
 import { supabaseClient } from "../../lib/supabase";
 
+// ⚠️ IMPORTANTE: Desabilitar pre-renderización para que funcione con query params
+export const prerender = false;
+
 // Obtener parámetro de categoría
 const url = new URL(Astro.request.url);
 const categorySlug = url.searchParams.get("categoria");
+
+console.log('🔍 URL completa:', Astro.request.url);
+console.log('🔍 categorySlug:', categorySlug);
+console.log('🔍 ¿Es Rebajas?:', categorySlug === 'rebajas');
 
 // Obtener categorías principales (sin parent)
 const { data: mainCategories } = await supabaseClient
@@ -41,8 +48,13 @@ if (isRebajasCategory) {
 
   // Filtrar solo productos que tienen descuento
   products = rebajasProducts?.filter(p => 
-    p.original_price_cents && p.original_price_cents > p.price_cents
+    p.original_price_cents && p.price_cents && p.original_price_cents > p.price_cents
   ) || [];
+  
+  // Si no hay productos con descuento, mostrar al menos los primeros 8 productos
+  if (products.length === 0) {
+    products = rebajasProducts?.slice(0, 8) || [];
+  }
   
   categoryName = "Rebajas";
   pageTitle = "REBAJAS";
