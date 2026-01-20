@@ -56,8 +56,20 @@ function saveCart(state: CartState): void {
 
 // Nano Store del carrito
 export const cartStore: WritableAtom<CartState> = atom<CartState>(
-  getInitialCart()
+  { items: [], lastUpdated: Date.now() }
 );
+
+/**
+ * Obtiene el carrito asegurando que siempre es válido
+ */
+function getCart(): CartState {
+  let cart = cartStore.get();
+  if (!cart || !Array.isArray(cart.items)) {
+    cart = getInitialCart();
+    cartStore.set(cart);
+  }
+  return cart;
+}
 
 /**
  * Añade un producto al carrito
@@ -70,7 +82,7 @@ export function addToCart(
 ): void {
   console.log('📦 addToCart llamado con:', { item, quantity });
   
-  const currentCart = cartStore.get();
+  const currentCart = getCart();
   console.log('📦 Carrito actual:', currentCart);
   
   const existingItem = currentCart.items.find(
@@ -114,7 +126,7 @@ export function addToCart(
  * @param size Talla (si aplica)
  */
 export function removeFromCart(productId: string, size?: string): void {
-  const currentCart = cartStore.get();
+  const currentCart = getCart();
   const newItems = currentCart.items.filter(
     (item: CartItem) => !(item.id === productId && item.size === size)
   );
@@ -144,7 +156,7 @@ export function updateCartItemQuantity(
     return;
   }
 
-  const currentCart = cartStore.get();
+  const currentCart = getCart();
   const newItems = currentCart.items.map((item: CartItem) => {
     if (item.id === productId && item.size === size) {
       return {
@@ -181,7 +193,7 @@ export function clearCart(): void {
  * Calcula el total del carrito (en céntimos)
  */
 export function getCartTotal(): number {
-  const cart = cartStore.get();
+  const cart = getCart();
   return cart.items.reduce((total: number, item: CartItem) => {
     return total + item.price_cents * item.quantity;
   }, 0);
@@ -191,7 +203,7 @@ export function getCartTotal(): number {
  * Obtiene la cantidad total de artículos en el carrito
  */
 export function getCartItemCount(): number {
-  const cart = cartStore.get();
+  const cart = getCart();
   return cart.items.reduce((count: number, item: CartItem) => count + item.quantity, 0);
 }
 
@@ -199,14 +211,15 @@ export function getCartItemCount(): number {
  * Obtiene los artículos del carrito
  */
 export function getCartItems(): CartItem[] {
-  return cartStore.get().items;
+  const cart = getCart();
+  return cart.items;
 }
 
 /**
  * Valida si todos los artículos del carrito tienen stock suficiente
  */
 export function validateCart(): boolean {
-  const cart = cartStore.get();
+  const cart = getCart();
   return cart.items.every((item: CartItem) => item.quantity <= item.stock);
 }
 
@@ -216,7 +229,7 @@ export function validateCart(): boolean {
  * @param updates Map de productId -> nuevo stock
  */
 export function updateCartStock(updates: Record<string, number>): void {
-  const currentCart = cartStore.get();
+  const currentCart = getCart();
   const newItems = currentCart.items
     .map((item: CartItem) => {
       if (item.id in updates) {

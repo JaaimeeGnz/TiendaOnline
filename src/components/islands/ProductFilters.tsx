@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ProductCard from './ProductCard';
 
 interface Product {
   id: string;
@@ -262,37 +263,7 @@ export default function ProductFilters({ products, brands }: ProductFiltersProps
           {filteredProducts.length > 0 ? (
             <div className="products-grid">
               {filteredProducts.map((product) => (
-                <a
-                  key={product.id}
-                  href={`/productos/${product.slug}`}
-                  className="group relative block bg-white rounded overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  {product.images?.[0] && (
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-full aspect-square object-cover group-hover:opacity-80 transition-opacity"
-                    />
-                  )}
-                  <div className="p-3">
-                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">
-                      {product.brand || 'Sin marca'}
-                    </p>
-                    <h3 className="text-sm font-bold text-jd-black truncate group-hover:text-jd-turquoise transition">
-                      {product.name}
-                    </h3>
-                    <div className="mt-2 flex items-baseline gap-2">
-                      <span className="text-base font-bold text-jd-turquoise">
-                        €{(product.price_cents / 100).toFixed(2)}
-                      </span>
-                      {product.original_price_cents && (
-                        <span className="text-xs text-gray-400 line-through">
-                          €{(product.original_price_cents / 100).toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </a>
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (

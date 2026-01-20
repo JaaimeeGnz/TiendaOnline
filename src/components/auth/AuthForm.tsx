@@ -40,10 +40,26 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
         }
 
         console.log('Login exitoso para:', data.user.email);
+        console.log('User ID:', data.user.id);
+        console.log('Session data:', data.session);
         
         // Guardar estado autenticado
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('userEmail', data.user.email);
+        localStorage.setItem('userId', data.user.id);
+        
+        // Guardar sesión si está disponible
+        if (data.session?.access_token) {
+          console.log('Guardando token en sessionStorage');
+          sessionStorage.setItem('sb-user-session', JSON.stringify({
+            access_token: data.session.access_token,
+            user: data.user
+          }));
+        } else {
+          console.warn('⚠️ No hay access_token en la sesión');
+          // Guardar al menos el user_id como fallback
+          sessionStorage.setItem('userId', data.user.id);
+        }
         
         // Limpiar flags de invitado
         localStorage.removeItem('isGuest');
@@ -161,6 +177,7 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
           }, 2000);
         } else {
           console.log('Auto-login exitoso');
+          console.log('User ID:', signInData.user?.id);
           localStorage.removeItem('isGuest');
           localStorage.removeItem('guestLoginTime');
           
@@ -168,6 +185,17 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
           localStorage.setItem('isAuthenticated', 'true');
           localStorage.setItem('userEmail', signInData.user?.email || '');
           localStorage.setItem('userName', username);
+          localStorage.setItem('userId', signInData.user?.id || '');
+          
+          if (signInData.session?.access_token) {
+            sessionStorage.setItem('sb-user-session', JSON.stringify({
+              access_token: signInData.session.access_token,
+              user: signInData.user
+            }));
+          } else {
+            // Guardar al menos el user_id como fallback
+            sessionStorage.setItem('userId', signInData.user?.id || '');
+          }
           
           // Disparar evento para sincronizar otros componentes
           window.dispatchEvent(new Event('auth-changed'));

@@ -4,6 +4,8 @@
  * Tarjeta de producto estilo JD Sports
  */
 
+import FavoriteButton from './FavoriteButton';
+
 interface Props {
   product?: any;
   id?: string;
@@ -104,6 +106,9 @@ const isLowStock = stock > 0 && stock < 6;
         </div>
       )
     }
+
+    <!-- Favorite Button -->
+    <FavoriteButton client:load productId={id} productName={name} />
 
     <!-- Badges -->
     <div class="absolute top-2 left-2 flex flex-col gap-1">

@@ -38,9 +38,11 @@ export default function CloudinaryUpload({ onUploadComplete, multiple = true }: 
     console.log('Iniciando widget con cloudName:', cloudName);
 
     try {
+      const cloudinaryApiKey = import.meta.env.PUBLIC_CLOUDINARY_API_KEY;
       const widget = window.cloudinary.createUploadWidget(
         {
           cloudName: cloudName,
+          apiKey: cloudinaryApiKey,
           uploadPreset: 'fashionmarket_products',
           folder: 'fashionmarket/products',
           multiple: multiple,

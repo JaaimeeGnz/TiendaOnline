@@ -172,6 +172,150 @@ export async function sendRegistrationEmail(email: string, userName?: string) {
 }
 
 /**
+ * Enviar correo de confirmación de pedido
+ */
+export async function sendOrderConfirmationEmail(
+  email: string,
+  orderNumber: number,
+  items: any[],
+  subtotal: number,
+  shipping: number,
+  total: number
+) {
+  const apiKey = getBrevoApiKey();
+  if (!apiKey) {
+    return { success: false, error: "API Key no configurada" };
+  }
+
+  // Formatear items
+  const itemsHtml = items
+    .map(
+      (item) =>
+        `
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 12px; text-align: left;">${item.name}</td>
+          <td style="padding: 12px; text-align: center;">${item.quantity}</td>
+          <td style="padding: 12px; text-align: right;">€${(item.price * item.quantity).toFixed(2)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  try {
+    const response = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { email: "jaimechipiona2006@gmail.com", name: "JGMarket" },
+        to: [{ email: email }],
+        subject: `Pedido Confirmado - Pedido #PED-${String(orderNumber).padStart(6, "0")}`,
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(to right, #dc2626, #991b1b); color: white; padding: 30px; text-align: center;">
+              <h1 style="margin: 0; font-size: 32px;">JGMARKET</h1>
+              <p style="margin: 10px 0 0 0;">La mejor moda deportiva actual</p>
+            </div>
+            
+            <div style="padding: 30px; background-color: #f3f4f6;">
+              <h2 style="color: #1f2937; margin-top: 0;">¡Pedido Confirmado! ✓</h2>
+              <p style="color: #4b5563; line-height: 1.6;">
+                Hola,
+              </p>
+              <p style="color: #4b5563; line-height: 1.6;">
+                Gracias por tu pedido. Te confirmamos que lo hemos recibido y estamos preparándolo para enviarlo.
+              </p>
+              
+              <div style="background-color: white; border-left: 4px solid #14b8a6; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 16px;">Detalles del Pedido</h3>
+                
+                <div style="margin-bottom: 15px;">
+                  <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 12px;">NÚMERO DE PEDIDO</p>
+                  <p style="margin: 0; font-size: 20px; font-weight: bold; color: #dc2626;">Pedido #PED-${String(orderNumber).padStart(6, "0")}</p>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                  <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 12px;">CORREO DE CONTACTO</p>
+                  <p style="margin: 0; color: #1f2937;">${email}</p>
+                </div>
+              </div>
+              
+              <div style="background-color: white; padding: 20px; margin: 20px 0; border-radius: 8px;">
+                <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 16px;">Artículos Pedidos</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <thead>
+                    <tr style="background-color: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
+                      <th style="padding: 12px; text-align: left; color: #1f2937; font-weight: 600;">Producto</th>
+                      <th style="padding: 12px; text-align: center; color: #1f2937; font-weight: 600;">Cantidad</th>
+                      <th style="padding: 12px; text-align: right; color: #1f2937; font-weight: 600;">Precio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${itemsHtml}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div style="background-color: white; padding: 20px; margin: 20px 0; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px;">
+                  <span style="color: #4b5563;">Subtotal</span>
+                  <span style="color: #1f2937; font-weight: 600;">€${(subtotal / 100).toFixed(2)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px;">
+                  <span style="color: #4b5563;">Envío</span>
+                  <span style="color: #1f2937; font-weight: 600;">€${(shipping / 100).toFixed(2)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-top: 10px; background-color: #f3f4f6; padding: 10px; margin-top: 10px; border-radius: 6px;">
+                  <span style="color: #1f2937; font-weight: 700; font-size: 16px;">TOTAL</span>
+                  <span style="color: #dc2626; font-weight: 700; font-size: 16px;">€${(total / 100).toFixed(2)}</span>
+                </div>
+              </div>
+              
+              <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 6px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📦 Próximos Pasos</p>
+                <p style="margin: 8px 0 0 0; color: #3730a3; font-size: 14px;">
+                  Tu pedido está siendo preparado. Recibirás un email con el número de seguimiento cuando se envíe.
+                </p>
+              </div>
+              
+              <p style="color: #4b5563; line-height: 1.6; margin-top: 20px;">
+                Si tienes alguna pregunta sobre tu pedido, no dudes en contactarnos. Estamos aquí para ayudarte.
+              </p>
+            </div>
+            
+            <div style="background-color: #1f2937; color: white; padding: 20px; text-align: center; font-size: 12px;">
+              <p style="margin: 0;">© 2026 JGMarket. Todos los derechos reservados.</p>
+            </div>
+          </div>
+        `,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Error de Brevo:", response.status, errorText);
+      return { success: false, error: `Error ${response.status}: ${errorText}` };
+    }
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      console.error("❌ Error parseando JSON de Brevo:", e);
+      return { success: false, error: "Error parseando respuesta de Brevo" };
+    }
+
+    console.log("✅ Email de confirmación enviado:", data.messageId);
+    return { success: true, messageId: data.messageId };
+  } catch (error: any) {
+    console.error("❌ Error enviando email de confirmación:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Enviar correo genérico
  */
 export async function sendEmail(

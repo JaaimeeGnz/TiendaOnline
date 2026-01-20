@@ -96,8 +96,24 @@ export default function AccountNav() {
   // Si es invitado, mostrar opción de iniciar sesión
   if (isGuest) {
     return (
-      <a href="/login" className="hover:text-jd-turquoise transition">
-        Iniciar Sesión
+      <a 
+        href="/login" 
+        className="p-2 text-jd-black hover:text-jd-red transition"
+        title="Iniciar Sesión"
+      >
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+          />
+        </svg>
       </a>
     );
   }
@@ -105,16 +121,45 @@ export default function AccountNav() {
   // Si está autenticado
   if (isAuthenticated) {
     return (
-      <div className="flex items-center gap-4">
-        <a href="/account" className="hover:text-jd-turquoise transition">
-          Mi cuenta
+      <div className="flex items-center gap-2">
+        <a 
+          href="/account" 
+          className="p-2 text-jd-black hover:text-jd-red transition"
+          title="Mi cuenta"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            />
+          </svg>
         </a>
         <button
           onClick={handleLogout}
-          className="text-red-600 hover:text-red-800 transition font-semibold"
+          className="p-2 text-jd-black hover:text-jd-red transition"
+          title="Cerrar Sesión"
           id="logout-btn"
         >
-          Cerrar Sesión
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
+          </svg>
         </button>
       </div>
     );
@@ -122,8 +167,24 @@ export default function AccountNav() {
 
   // Si no está autenticado
   return (
-    <a href="/auth" className="hover:text-jd-turquoise transition">
-      Mi cuenta
+    <a 
+      href="/auth" 
+      className="p-2 text-jd-black hover:text-jd-red transition"
+      title="Mi cuenta"
+    >
+      <svg
+        className="w-6 h-6"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+        />
+      </svg>
     </a>
   );
 }

@@ -7,6 +7,7 @@
 import PublicLayout from '../../layouts/PublicLayout.astro';
 import ProductGallery from '../../components/product/ProductGallery.astro';
 import AddToCartButton from '../../components/islands/AddToCartButton';
+import FavoriteButton from '../../components/product/FavoriteButton';
 import { supabaseClient } from '../../lib/supabase';
 import { formatPrice } from '../../lib/utils';
 
@@ -76,7 +77,12 @@ const selectedSize = 'M';
       </div>
 
       <!-- Detalles del producto -->
-      <div class="space-y-8">
+      <div class="space-y-8 relative">
+        <!-- Botón de favorito -->
+        <div class="absolute top-0 right-0">
+          <FavoriteButton client:load productId={product.id} productName={product.name} />
+        </div>
+
         <!-- Nombre y precio -->
         <div>
           <div class="flex items-center gap-4 mb-3">

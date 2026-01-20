@@ -6,6 +6,7 @@
 
 import BaseLayout from "./BaseLayout.astro";
 import AccountNav from "../components/AccountNav";
+import SearchBar from "../components/SearchBar.tsx";
 
 interface Props {
   title?: string;
@@ -17,7 +18,7 @@ const { title, description } = Astro.props;
 // Obtener la ruta actual para resaltar el menú activo
 const currentPath = new URL(Astro.request.url).pathname;
 const currentUrl = new URL(Astro.request.url);
-const isProductos = currentPath === '/productos';
+const isProductos = currentPath === '/productos' && currentUrl.searchParams.get('categoria') !== 'rebajas';
 const isZapatillas = currentPath.startsWith('/categoria/zapatillas');
 const isRopa = currentPath.startsWith('/categoria/ropa');
 const isAccesorios = currentPath.startsWith('/categoria/accesorios');
@@ -36,9 +37,6 @@ const isMarcas = currentPath.startsWith('/marcas');
           <a href="/contacto" class="hover:text-jd-turquoise transition"
             >Ayuda</a
           >
-        </div>
-        <div class="flex items-center gap-6 ml-auto">
-          <AccountNav client:load />
         </div>
       </div>
     </div>
@@ -77,20 +75,7 @@ const isMarcas = currentPath.startsWith('/marcas');
           </a>
 
           <!-- Search Bar (Desktop) -->
-          <div class="hidden md:flex flex-1 max-w-xl mx-8">
-            <div class="flex w-full">
-              <input
-                type="text"
-                placeholder="Buscar en JGMarket: Nike, Adidas..."
-                class="flex-1 px-4 py-2 border border-r-0 border-gray-300 rounded-l focus:outline-none focus:border-jd-turquoise text-sm"
-              />
-              <button
-                class="px-6 py-2 bg-jd-turquoise text-white font-bold text-sm rounded-r hover:bg-opacity-90 transition"
-              >
-                Buscar
-              </button>
-            </div>
-          </div>
+          <SearchBar client:load />
 
           <!-- Icons -->
           <div class="flex items-center gap-3">
@@ -112,9 +97,12 @@ const isMarcas = currentPath.startsWith('/marcas');
               </svg>
             </button>
 
-            <!-- Wishlist -->
-            <button
-              class="hidden sm:block p-2 text-jd-black hover:text-jd-red transition"
+            <!-- Favoritos -->
+            <a
+              href="/favoritos"
+              class="relative p-2 text-jd-black hover:text-jd-red transition"
+              aria-label="Ver favoritos"
+              id="favorites-link"
             >
               <svg
                 class="w-6 h-6"
@@ -127,9 +115,20 @@ const isMarcas = currentPath.startsWith('/marcas');
                   stroke-linejoin="round"
                   stroke-width="2"
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                ></path>
+                />
               </svg>
-            </button>
+              <span
+                id="favorites-count"
+                class="absolute -top-1 -right-1 bg-jd-red text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold hidden"
+              >
+                0
+              </span>
+            </a>
+
+            <!-- Account -->
+            <div class="flex items-center">
+              <AccountNav client:load />
+            </div>
 
             <!-- Cart -->
             <button
@@ -695,6 +694,29 @@ const isMarcas = currentPath.startsWith('/marcas');
       // Actualizar el badge del carrito al cargar la página
       updateCartModal();
     }
+
+    // Actualizar el badge de favoritos
+    function updateFavoritesBadge() {
+      const favoritesCount = document.getElementById('favorites-count');
+      if (!favoritesCount) return;
+
+      const favorites = JSON.parse(localStorage.getItem('favorites') || '{}');
+      const count = Object.keys(favorites).length;
+
+      if (count > 0) {
+        favoritesCount.textContent = count;
+        favoritesCount.classList.remove('hidden');
+      } else {
+        favoritesCount.classList.add('hidden');
+      }
+    }
+
+    // Actualizar badge al cargar la página
+    updateFavoritesBadge();
+
+    // Escuchar cambios en favoritos
+    window.addEventListener('storage', updateFavoritesBadge);
+    window.addEventListener('favorites-updated', updateFavoritesBadge)
 
     // Mostrar indicador de estado de sesión
     async function updateSessionStatus() {
