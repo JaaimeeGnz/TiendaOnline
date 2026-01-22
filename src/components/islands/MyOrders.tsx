@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 
 interface Order {
   id: string;
-  session_id: string;
+  session_id?: string;
+  stripe_session_id?: string;
   order_number?: number;
   items: any[];
   total_cents: number;
@@ -50,6 +51,7 @@ export default function MyOrders() {
         setOrders([]);
       } else {
         console.log('✅ Pedidos encontrados:', data.orders?.length || 0);
+        console.log('📦 Primer pedido:', data.orders?.[0]);
         setOrders(data.orders || []);
       }
     } catch (err: any) {
@@ -153,7 +155,39 @@ export default function MyOrders() {
               Ver Detalles
             </button>
             <button
-              onClick={() => window.open(`/api/invoice?session_id=${order.session_id}`)}
+              onClick={async () => {
+                let sessionId = order.stripe_session_id || order.session_id;
+                
+                // Si no hay sessionId, intentar obtenerlo del localStorage
+                if (!sessionId) {
+                  sessionId = localStorage.getItem('stripe_session_id');
+                }
+                
+                console.log('📥 Descargando factura. SessionId:', sessionId);
+                
+                if (sessionId) {
+                  try {
+                    // Usar localStorage como param en la URL para evitar problemas con middleware
+                    localStorage.setItem('invoice_session_id', sessionId);
+                    const response = await fetch(`/pdf/invoice?id=${encodeURIComponent(sessionId)}`);
+                    console.log('📥 Response status:', response.status);
+                    if (!response.ok) {
+                      const error = await response.json();
+                      alert(`Error: ${error.error || 'Error al descargar factura'}`);
+                      return;
+                    }
+                    const html = await response.text();
+                    const blob = new Blob([html], { type: 'text/html' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    window.open(blobUrl);
+                  } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error al descargar factura');
+                  }
+                } else {
+                  alert('No se encontró el ID de sesión para esta orden');
+                }
+              }}
               className="flex-1 bg-gray-300 text-gray-900 py-2 px-4 rounded font-bold hover:bg-gray-400 transition text-sm"
             >
               Descargar Factura

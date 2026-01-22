@@ -138,6 +138,12 @@ export default function StripeCheckout() {
       }
 
       if (data.url) {
+        // Extraer session_id de la URL de Stripe y guardarlo
+        const url = new URL(data.url);
+        const sessionId = url.searchParams.get('session_id');
+        if (sessionId) {
+          localStorage.setItem('stripe_session_id', sessionId);
+        }
         window.location.href = data.url;
       } else {
         throw new Error('No URL returned from server');

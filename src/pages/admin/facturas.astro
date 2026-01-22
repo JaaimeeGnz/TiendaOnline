@@ -1,0 +1,25 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import InvoiceManagement from '../../components/islands/InvoiceManagement';
+---
+
+<AdminLayout title="Gestión de Facturas">
+  <div class="space-y-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-4xl font-black text-jd-black">Gestión de Facturas</h1>
+        <p class="text-gray-600 mt-2">Administra facturas, abonos y devoluciones</p>
+      </div>
+      <a href="/admin" class="flex items-center gap-2 px-6 py-3 bg-jd-black text-white font-bold rounded-lg hover:bg-jd-darkGray active:scale-95 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Volver
+      </a>
+    </div>
+
+    <!-- Content -->
+    <InvoiceManagement client:load />
+  </div>
+</AdminLayout>

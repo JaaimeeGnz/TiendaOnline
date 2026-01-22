@@ -1,0 +1,138 @@
+import React, { useState, useEffect } from 'react';
+import { getDashboardStats } from '../../lib/dashboardStats';
+
+interface DashboardStats {
+  totalSalesMonth: number;
+  pendingOrders: number;
+  topProduct: { name: string; sold: number } | null;
+  salesLast7Days: Array<{ date: string; sales: number }>;
+}
+
+export default function DashboardAnalytics() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      setLoading(true);
+      const data = await getDashboardStats();
+      setStats(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading dashboard stats:', err);
+      setError('Error al cargar las estadísticas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-jd-turquoise"></div>
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 text-red-700">
+        <p className="font-bold">{error || 'Error al cargar las estadísticas'}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Ventas Totales del Mes */}
+        <div className="bg-white border-2 border-jd-turquoise rounded-lg p-6 hover:shadow-lg transition">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-bold text-gray-600 uppercase">Ventas del Mes</p>
+              <p className="text-4xl font-black text-jd-turquoise mt-3">
+                {stats.totalSalesMonth.toFixed(2)}€
+              </p>
+              <p className="text-xs text-gray-500 mt-2">Enero 2026</p>
+            </div>
+            <div className="w-12 h-12 bg-jd-turquoise bg-opacity-10 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-jd-turquoise" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Pedidos Pendientes */}
+        <div className="bg-white border-2 border-jd-red rounded-lg p-6 hover:shadow-lg transition">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-bold text-gray-600 uppercase">Pedidos Pendientes</p>
+              <p className="text-4xl font-black text-jd-red mt-3">{stats.pendingOrders}</p>
+              <p className="text-xs text-gray-500 mt-2">Requieren atención</p>
+            </div>
+            <div className="w-12 h-12 bg-jd-red bg-opacity-10 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-jd-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Producto Más Vendido */}
+        <div className="bg-white border-2 border-jd-black rounded-lg p-6 hover:shadow-lg transition">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-bold text-gray-600 uppercase">Producto Estrella</p>
+              <p className="text-2xl font-black text-jd-black mt-3 line-clamp-2">
+                {stats.topProduct?.name || 'Sin datos'}
+              </p>
+              {stats.topProduct && (
+                <p className="text-xs text-gray-500 mt-2">{stats.topProduct.sold} unidades vendidas</p>
+              )}
+            </div>
+            <div className="w-12 h-12 bg-jd-black bg-opacity-10 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-jd-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Simple Bar Chart for Last 7 Days */}
+      <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
+        <h3 className="text-lg font-bold text-jd-black mb-6">Ventas - Últimos 7 Días</h3>
+        
+        {stats.salesLast7Days.length > 0 ? (
+          <div className="space-y-4">
+            {stats.salesLast7Days.map((day) => (
+              <div key={day.date} className="flex items-center gap-4">
+                <div className="w-24 text-sm font-semibold text-gray-600">{day.date}</div>
+                <div className="flex-1 h-8 bg-gray-100 rounded-lg overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-jd-turquoise to-jd-turquoise transition-all duration-300"
+                    style={{
+                      width: `${(day.sales / (Math.max(...stats.salesLast7Days.map(d => d.sales)) || 1)) * 100}%`,
+                    }}
+                  ></div>
+                </div>
+                <div className="w-16 text-right font-bold text-jd-turquoise">{day.sales.toFixed(2)}€</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>No hay datos de ventas en los últimos 7 días</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

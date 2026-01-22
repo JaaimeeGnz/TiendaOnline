@@ -92,7 +92,17 @@ const sessionId = Astro.url.searchParams.get('session_id');
     <script>
         // Datos del carrito antes de pagar
         const CART_KEY = 'fashionmarket_cart';
-        const SESSION_ID = new URLSearchParams(window.location.search).get('session_id');
+        
+        // Obtener SESSION_ID directamente de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        let SESSION_ID = urlParams.get('session_id');
+        
+        // Si no viene en URL, intentar del localStorage
+        if (!SESSION_ID) {
+            SESSION_ID = localStorage.getItem('stripe_session_id');
+        }
+        
+        console.log('Session ID:', SESSION_ID);
 
         function getCart() {
             const stored = localStorage.getItem(CART_KEY);
@@ -158,60 +168,19 @@ const sessionId = Astro.url.searchParams.get('session_id');
         // Generar PDF de factura
         async function generateInvoicePDF() {
             try {
-                // Importar jsPDF dinámicamente
-                const { jsPDF } = await import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+                if (!SESSION_ID) {
+                    alert('No se pudo obtener el ID de la sesión. Intenta nuevamente.');
+                    return;
+                }
                 
-                const doc = new jsPDF();
-                const cart = getCart();
+                console.log('Downloading invoice for session:', SESSION_ID);
                 
-                let y = 20;
+                // Redirigir al nuevo endpoint de factura que muestra HTML con botones de descarga
+                window.location.href = `/pdf/invoice?id=${encodeURIComponent(SESSION_ID)}`;
                 
-                // Header
-                doc.setFontSize(20);
-                doc.text('FACTURA', 20, y);
-                y += 15;
-                
-                doc.setFontSize(10);
-                doc.text('JGMarket - Fashion Store', 20, y);
-                y += 5;
-                doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, 20, y);
-                y += 5;
-                doc.text(`Ref. Pedido: ${SESSION_ID?.substring(0, 12) || 'N/A'}`, 20, y);
-                y += 15;
-                
-                // Items
-                doc.setFontSize(10);
-                doc.text('DETALLES DEL PEDIDO', 20, y);
-                y += 8;
-                
-                let subtotal = 0;
-                cart.forEach((item: any, index: number) => {
-                    const itemTotal = item.price_cents * item.quantity;
-                    subtotal += itemTotal;
-                    
-                    doc.text(`${index + 1}. ${item.name}`, 20, y);
-                    doc.text(`   ${item.quantity} x €${(item.price_cents / 100).toFixed(2)} = €${(itemTotal / 100).toFixed(2)}`, 20, y + 5);
-                    y += 10;
-                });
-                
-                y += 5;
-                const shipping = subtotal >= 5000 ? 0 : 1000;
-                const total = subtotal + shipping;
-                
-                doc.line(20, y, 190, y);
-                y += 5;
-                
-                doc.text(`Subtotal: €${(subtotal / 100).toFixed(2)}`, 20, y);
-                y += 5;
-                doc.text(`Envío: €${(shipping / 100).toFixed(2)}`, 20, y);
-                y += 8;
-                
-                doc.setFontSize(12);
-                doc.text(`TOTAL: €${(total / 100).toFixed(2)}`, 20, y);
-                
-                doc.save(`factura-${SESSION_ID?.substring(0, 12) || 'pedido'}.pdf`);
+                alert('Factura descargada. Puedes imprimirla a PDF desde el navegador.');
             } catch (error) {
-                console.error('Error generating PDF:', error);
+                console.error('Error generating invoice:', error);
                 alert('Error al descargar la factura. Intenta de nuevo.');
             }
         }

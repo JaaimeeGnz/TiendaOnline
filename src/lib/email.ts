@@ -555,3 +555,94 @@ export async function sendNewsletterPromotion(
   };
 }
 
+/**
+ * Enviar factura por email
+ */
+export async function sendInvoiceEmail(
+  email: string,
+  invoiceNumber: string,
+  customerName: string,
+  invoiceHtml: string,
+  totalAmount: string
+) {
+  const apiKey = getBrevoApiKey();
+  if (!apiKey) {
+    return { success: false, error: "API Key no configurada" };
+  }
+
+  try {
+    const response = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { email: "jaimechipiona2006@gmail.com", name: "JGMarket" },
+        to: [{ email: email }],
+        subject: `Tu Factura JGMarket - ${invoiceNumber}`,
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(to right, #dc2626, #991b1b); color: white; padding: 30px; text-align: center;">
+              <h1 style="margin: 0; font-size: 32px;">JGMARKET</h1>
+              <p style="margin: 10px 0 0 0;">La mejor moda deportiva actual</p>
+            </div>
+            
+            <div style="padding: 30px; background-color: #f3f4f6;">
+              <h2 style="color: #1f2937; margin-top: 0;">¡Tu Factura está lista!</h2>
+              <p style="color: #4b5563; line-height: 1.6;">
+                Hola ${customerName},
+              </p>
+              <p style="color: #4b5563; line-height: 1.6;">
+                Gracias por tu compra. Adjuntamos tu factura número <strong>${invoiceNumber}</strong> con un total de <strong style="color: #dc2626;">${totalAmount}</strong>.
+              </p>
+              
+              <div style="background-color: white; border-left: 4px solid #14b8a6; padding: 15px; margin: 20px 0;">
+                <h3 style="margin: 0 0 10px 0; color: #1f2937;">Detalles de tu compra</h3>
+                <p style="margin: 5px 0; color: #4b5563;"><strong>Número de Factura:</strong> ${invoiceNumber}</p>
+                <p style="margin: 5px 0; color: #4b5563;"><strong>Total:</strong> ${totalAmount}</p>
+              </div>
+
+              <div style="background-color: white; border: 1px solid #e5e7eb; border-radius: 5px; padding: 15px; margin: 20px 0; text-align: center;">
+                <p style="margin: 0 0 10px 0; color: #4b5563; font-size: 14px;">
+                  Puedes descargar tu factura completa en el siguiente enlace:
+                </p>
+                <a href="http://localhost:3000/pdf/invoice?id=${invoiceNumber}" style="display: inline-block; background-color: #dc2626; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+                  Ver Factura Completa
+                </a>
+              </div>
+              
+              <p style="color: #4b5563; line-height: 1.6; font-size: 12px;">
+                Si tienes alguna pregunta sobre tu pedido, no dudes en contactarnos.
+              </p>
+            </div>
+            
+            <div style="background-color: #1f2937; color: white; padding: 20px; text-align: center; font-size: 12px;">
+              <p style="margin: 0;">© 2026 JGMarket. Todos los derechos reservados.</p>
+            </div>
+          </div>
+        `,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Error de Brevo al enviar factura:", response.status, errorText);
+      return { success: false, error: `Error ${response.status}: ${errorText}` };
+    }
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      console.error("❌ Error parseando JSON de Brevo:", e);
+      return { success: false, error: "Error parseando respuesta de Brevo" };
+    }
+
+    console.log("✅ Factura enviada por email a:", email);
+    return { success: true, messageId: data.messageId };
+  } catch (error: any) {
+    console.error("❌ Error enviando factura por email:", error);
+    return { success: false, error: error.message };
+  }
+}
