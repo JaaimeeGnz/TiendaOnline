@@ -7,6 +7,7 @@
 import BaseLayout from "./BaseLayout.astro";
 import AccountNav from "../components/AccountNav";
 import SearchBar from "../components/SearchBar.tsx";
+import NewsletterForm from "../components/islands/NewsletterForm";
 
 interface Props {
   title?: string;
@@ -331,18 +332,7 @@ const isMarcas = currentPath.startsWith('/marcas');
                 Recibe las últimas novedades y ofertas exclusivas
               </p>
             </div>
-            <div class="flex w-full md:w-auto">
-              <input
-                type="email"
-                placeholder="Tu email"
-                class="flex-1 md:w-64 px-4 py-2 bg-gray-800 border border-gray-700 text-white text-sm rounded-l focus:outline-none focus:border-jd-turquoise"
-              />
-              <button
-                class="px-6 py-2 bg-jd-turquoise text-white font-bold text-sm rounded-r hover:bg-opacity-90 transition uppercase"
-              >
-                Suscribir
-              </button>
-            </div>
+            <NewsletterForm client:load discountPercentage={10} />
           </div>
         </div>
       </div>

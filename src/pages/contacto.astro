@@ -5,6 +5,8 @@
  */
 
 import PublicLayout from "../layouts/PublicLayout.astro";
+
+export const prerender = false;
 ---
 
 <PublicLayout title="Contacto - FashionMarket">
@@ -172,7 +174,7 @@ import PublicLayout from "../layouts/PublicLayout.astro";
                                 Teléfono
                             </h3>
                             <p class="text-neutral-gray_dark">
-                                +34 900 123 456
+                                +34 603 011 629
                             </p>
                             <p class="text-sm text-neutral-gray_dark">
                                 Lun - Vie: 9:00 - 18:00
@@ -209,10 +211,10 @@ import PublicLayout from "../layouts/PublicLayout.astro";
                                 Tienda Física
                             </h3>
                             <p class="text-neutral-gray_dark">
-                                Paseo de Gracia 123
+                                Calle Amanecer nº9
                             </p>
                             <p class="text-neutral-gray_dark">
-                                08008 Barcelona, España
+                                11550 Chipiona, Cádiz, España
                             </p>
                         </div>
                     </div>
@@ -241,37 +243,21 @@ import PublicLayout from "../layouts/PublicLayout.astro";
             </div>
         </div>
 
-        <!-- Map placeholder -->
+        <!-- Map -->
         <div class="mt-16">
-            <div
-                class="bg-neutral-gray_light rounded-sm h-96 flex items-center justify-center"
-            >
-                <div class="text-center">
-                    <svg
-                        class="w-16 h-16 mx-auto text-neutral-gray_dark mb-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="1.5"
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        ></path>
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="1.5"
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    <p class="text-neutral-gray_dark font-semibold">
-                        Paseo de Gracia 123, Barcelona
-                    </p>
-                    <p class="text-sm text-neutral-gray_dark mt-2">
-                        Mapa interactivo próximamente
-                    </p>
-                </div>
+            <h2 class="font-serif text-2xl font-bold text-primary-800 mb-6">
+                Encuéntranos
+            </h2>
+            <div class="bg-neutral-gray_light rounded-sm overflow-hidden h-96 shadow-lg">
+                <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3126.8485645123456!2d-6.474!3d36.743!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd125f50e5c5c5c5%3A0x1234567890!2sCalle%20Amanecer%209%2C%2011550%20Chipiona%2C%20C%C3%A1diz!5e0!3m2!1ses!2ses!4v1234567890123"
+                    width="100%"
+                    height="100%"
+                    style="border:0;"
+                    allowfullscreen=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
             </div>
         </div>
     </div>
@@ -280,15 +266,107 @@ import PublicLayout from "../layouts/PublicLayout.astro";
         // Form handling
         const form = document.querySelector("form");
         if (form) {
-            form.addEventListener("submit", (e) => {
+            form.addEventListener("submit", async (e) => {
                 e.preventDefault();
 
-                // TODO: Implementar envío real del formulario
-                alert(
-                    "Gracias por tu mensaje. Nos pondremos en contacto contigo pronto.",
-                );
-                form.reset();
+                const formData = new FormData(form);
+                const data = {
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    subject: formData.get('subject'),
+                    message: formData.get('message'),
+                };
+
+                try {
+                    const response = await fetch('/api/contact/submit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data),
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showSuccessMessage(result.message);
+                        form.reset();
+                    } else {
+                        showErrorMessage('Error: ' + (result.error || 'No se pudo enviar el mensaje'));
+                    }
+                } catch (error) {
+                    console.error('Error submitting contact form:', error);
+                    showErrorMessage('Error al enviar tu mensaje. Por favor intenta de nuevo.');
+                }
             });
         }
+
+        function showSuccessMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 animate-fade-in max-w-md';
+            messageDiv.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <p class="font-semibold">${message}</p>
+                        <p class="text-sm text-green-100 mt-1">Te contactaremos en breve.</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(messageDiv);
+
+            setTimeout(() => {
+                messageDiv.style.animation = 'fadeOut 0.3s ease-out forwards';
+                setTimeout(() => messageDiv.remove(), 300);
+            }, 5000);
+        }
+
+        function showErrorMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 animate-fade-in max-w-md';
+            messageDiv.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <p class="font-semibold">Error al enviar</p>
+                        <p class="text-sm text-red-100 mt-1">${message}</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(messageDiv);
+
+            setTimeout(() => {
+                messageDiv.style.animation = 'fadeOut 0.3s ease-out forwards';
+                setTimeout(() => messageDiv.remove(), 300);
+            }, 5000);
+        }
     </script>
+
+    <style>
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
 </PublicLayout>

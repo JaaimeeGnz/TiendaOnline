@@ -126,7 +126,11 @@ export async function subscribeToNewsletter(
           };
         }
       }
-      return { success: false, message: 'Error en la suscripción' };
+      return { 
+        success: false, 
+        message: 'Error en la suscripción',
+        discountCode: undefined
+      };
     }
 
     // También crear el código de descuento en la tabla discount_codes
@@ -151,7 +155,11 @@ export async function subscribeToNewsletter(
     };
   } catch (error) {
     console.error('Error subscribing to newsletter:', error);
-    return { success: false, message: 'Error procesando tu suscripción' };
+    return { 
+      success: false, 
+      message: 'Error procesando tu suscripción',
+      discountCode: undefined
+    };
   }
 }
 
@@ -210,5 +218,48 @@ export async function getNewsletterStats() {
   } catch (error) {
     console.error('Error fetching newsletter stats:', error);
     return null;
+  }
+}
+/**
+ * Obtiene todos los suscriptores activos del newsletter
+ */
+export async function getActiveSubscribers() {
+  try {
+    const { data, error } = await supabase
+      .from('newsletter_subscribers')
+      .select('email, discount_code, discount_percentage')
+      .eq('is_active', true);
+
+    if (error) {
+      console.error('Error fetching subscribers:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching subscribers:', error);
+    return [];
+  }
+}
+
+/**
+ * Cancela la suscripción de un email
+ */
+export async function unsubscribeFromNewsletter(email: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('newsletter_subscribers')
+      .update({ is_active: false })
+      .eq('email', email);
+
+    if (error) {
+      console.error('Error unsubscribing:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error unsubscribing:', error);
+    return false;
   }
 }

@@ -12,6 +12,13 @@ import { createClient } from '@supabase/supabase-js';
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
 
+  // IMPORTANTE: No procesar el middleware para rutas de API
+  // para evitar que el body sea consumido
+  if (pathname.startsWith('/api/')) {
+    console.log('🔷 [MIDDLEWARE] Skipping API route:', pathname);
+    return next();
+  }
+
   // Verificar autenticación usando cookies HTTP
   const accessToken = context.cookies.get('sb-access-token')?.value;
   const isGuest = context.cookies.has('guest-session');
@@ -38,7 +45,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.isGuest = isGuest;
 
   // Rutas públicas - sin restricción
-  const publicRoutes = ['/', '/auth', '/api', '/login', '/productos', '/categoria', '/marcas', '/carrito', '/contacto'];
+  const publicRoutes = ['/', '/auth', '/login', '/productos', '/categoria', '/marcas', '/carrito', '/contacto'];
 
   // Rutas de admin que requieren autenticación
   const adminRoutes = ['/admin'];
