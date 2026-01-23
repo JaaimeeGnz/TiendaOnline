@@ -6,7 +6,7 @@ import node from '@astrojs/node';
 export default defineConfig({
   output: 'server',
   adapter: node({
-    mode: 'middleware',
+    mode: 'standalone',
   }),
   
   integrations: [
@@ -16,7 +16,7 @@ export default defineConfig({
   
   // Configuración del servidor
   server: {
-    port: 3000,
+    port: 4321,
     host: true,
   },
   
