@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../../../lib/supabase';
+import { supabaseServer } from '../../../../lib/supabase';
 
 /**
  * Actualiza o desactiva un código de descuento (admin)
@@ -25,7 +25,7 @@ export const PATCH: APIRoute = async ({ request, params }) => {
     const { id } = params;
     const body = await request.json();
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('discount_codes')
       .update({
         ...body,
@@ -71,7 +71,7 @@ export const DELETE: APIRoute = async ({ request, params }) => {
 
     const { id } = params;
 
-    const { error } = await supabase
+    const { error } = await supabaseServer
       .from('discount_codes')
       .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq('id', id);
