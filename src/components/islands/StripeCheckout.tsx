@@ -217,7 +217,7 @@ export default function StripeCheckout() {
           opacity: 1,
         }}
       >
-        {loading ? '⏳ Procesando...' : '💳 Pagar con Stripe'}
+        {loading ? 'Procesando...' : 'Pagar con Stripe'}
       </button>
     </div>
   );
