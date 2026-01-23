@@ -59,14 +59,27 @@ function generateInvoiceHTML(
 
   const itemsHTML = items
     .map(
-      (item: any) => `
+      (item: any) => {
+        // Obtener el precio unitario (puede venir en precio en euros o price_cents)
+        let priceCents = item.price_cents || 0;
+        
+        // Si no tiene price_cents pero tiene price (en euros), convertir
+        if (priceCents === 0 && item.price) {
+          priceCents = Math.round(item.price * 100);
+        }
+        
+        const quantity = item.quantity || 1;
+        const itemSubtotal = priceCents * quantity;
+        
+        return `
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.name || item.product_name || 'Producto'}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity || 1}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">€${((item.price_cents || 0) / 100).toFixed(2)}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">€${(((item.price_cents || 0) * (item.quantity || 1)) / 100).toFixed(2)}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">${quantity}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">€${(priceCents / 100).toFixed(2)}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">€${(itemSubtotal / 100).toFixed(2)}</td>
     </tr>
-  `
+  `;
+      }
     )
     .join('');
 
