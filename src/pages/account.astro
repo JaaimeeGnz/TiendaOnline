@@ -183,25 +183,43 @@ import MyOrders from '../components/islands/MyOrders';
 
     // Funciones para las diferentes acciones
     function editProfile() {
-      alert('Funcionalidad de edición de perfil próximamente');
+      const message = document.createElement('div');
+      message.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      message.textContent = 'Funcionalidad en desarrollo. Pronto podrás editar tu perfil';
+      document.body.appendChild(message);
+      setTimeout(() => message.remove(), 3000);
     }
 
     function changePassword() {
-      alert('Funcionalidad de cambio de contraseña próximamente');
+      const message = document.createElement('div');
+      message.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      message.textContent = 'Funcionalidad en desarrollo. Pronto podrás cambiar tu contraseña';
+      document.body.appendChild(message);
+      setTimeout(() => message.remove(), 3000);
     }
 
     function changeEmail() {
-      alert('Funcionalidad de cambio de correo próximamente');
+      const message = document.createElement('div');
+      message.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      message.textContent = 'Funcionalidad en desarrollo. Pronto podrás cambiar tu correo';
+      document.body.appendChild(message);
+      setTimeout(() => message.remove(), 3000);
     }
 
     function deleteAccount() {
-      if (confirm('¿Estás seguro de que deseas eliminar tu cuenta? Esta acción es irreversible.')) {
-        alert('Funcionalidad de eliminación de cuenta próximamente');
-      }
+      const message = document.createElement('div');
+      message.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      message.textContent = 'Funcionalidad en desarrollo. Pronto podrás eliminar tu cuenta';
+      document.body.appendChild(message);
+      setTimeout(() => message.remove(), 3000);
     }
 
     function addAddress() {
-      alert('Funcionalidad de agregar direcciones próximamente');
+      const message = document.createElement('div');
+      message.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      message.textContent = 'Funcionalidad en desarrollo. Pronto podrás agregar direcciones';
+      document.body.appendChild(message);
+      setTimeout(() => message.remove(), 3000);
     }
 
     // Navegación entre secciones
