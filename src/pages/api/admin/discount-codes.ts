@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../../lib/supabase';
+import { supabaseServer } from '../../../lib/supabase';
 
 /**
  * Crea un nuevo código de descuento (admin)
@@ -42,7 +42,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Crear código
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('discount_codes')
       .insert({
         code: code.toUpperCase(),
@@ -98,7 +98,7 @@ export const GET: APIRoute = async ({ request }) => {
     const offset = parseInt(url.searchParams.get('offset') || '0');
     const activeOnly = url.searchParams.get('active') === 'true';
 
-    let query = supabase
+    let query = supabaseServer
       .from('discount_codes')
       .select('*', { count: 'exact' });
 
