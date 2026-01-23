@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../../lib/supabase';
+import { supabaseServer } from '../../../lib/supabase';
 
 /**
  * Obtiene estadísticas y lista de suscriptores (admin)
@@ -21,7 +21,7 @@ export const GET: APIRoute = async ({ request }) => {
     const offset = parseInt(url.searchParams.get('offset') || '0');
 
     // Obtener suscriptores
-    const { data: subscribers, error: subError, count: totalCount } = await supabase
+    const { data: subscribers, error: subError, count: totalCount } = await supabaseServer
       .from('newsletter_subscribers')
       .select('*', { count: 'exact' })
       .order('subscribed_at', { ascending: false })
@@ -32,7 +32,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     // Estadísticas
-    const { data: stats } = await supabase
+    const { data: stats } = await supabaseServer
       .from('newsletter_subscribers')
       .select('id, used_at', { count: 'exact' })
       .not('used_at', 'is', null);
