@@ -6,15 +6,16 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
+    "preview": "node ./dist/server/entry.mjs",
     "astro": "astro",
-    "start": "node -e \"console.log('Server running on port 3000')\""
+    "start": "node ./dist/server/entry.mjs"
   },
   "engines": {
     "node": ">=22.0.0",
     "npm": ">=9.0.0"
   },
   "dependencies": {
+    "@astrojs/node": "^8.3.0",
     "@astrojs/react": "^3.1.0",
     "@stripe/stripe-js": "^8.6.3",
     "@supabase/supabase-js": "^2.38.0",

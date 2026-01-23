@@ -1,11 +1,13 @@
 import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
+import node from '@astrojs/node';
 
 export default defineConfig({
-  // Output estático por defecto (Astro 5.0)
-  // Las rutas /admin serán renderizadas bajo demanda
-  output: 'static',
+  output: 'server',
+  adapter: node({
+    mode: 'middleware',
+  }),
   
   integrations: [
     tailwind(),
