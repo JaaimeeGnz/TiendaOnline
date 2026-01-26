@@ -99,7 +99,7 @@ DROP TABLE IF EXISTS orders CASCADE;
 
 CREATE TABLE orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID,
+  user_id UUID NOT NULL,
   address_id UUID,
   order_number VARCHAR(50) NOT NULL UNIQUE,
   total_cents INT NOT NULL,
@@ -140,14 +140,14 @@ DROP POLICY IF EXISTS orders_update_own ON orders;
 -- Los usuarios pueden ver sus propios pedidos
 CREATE POLICY orders_read_own ON orders
   FOR SELECT
-  USING (user_id IS NULL OR auth.uid() = user_id);
+  USING (auth.uid() = user_id);
 
--- Permitir inserción desde el API (sin verificación de usuario)
+-- Permitir inserción desde el API (con autenticación requerida en backend)
 CREATE POLICY orders_insert_api ON orders
   FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (auth.uid() = user_id);
 
--- Los usuarios autenticados pueden actualizar sus propios pedidos
+-- Los usuarios pueden actualizar sus propios pedidos
 CREATE POLICY orders_update_own ON orders
   FOR UPDATE
   USING (auth.uid() = user_id)

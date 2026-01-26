@@ -18,6 +18,14 @@ export const POST: APIRoute = async (context) => {
     const body = await context.request.json();
     const { items, userId, email } = body;
 
+    // ✅ REQUERIR AUTENTICACIÓN
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'Debes estar autenticado para realizar una compra' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!items || items.length === 0) {
       return new Response(
         JSON.stringify({ error: 'No items in cart' }),
@@ -72,7 +80,7 @@ export const POST: APIRoute = async (context) => {
         const orderNum = `PED-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
         
         const { data, error: dbError } = await supabase.from('orders').insert({
-          user_id: userId || null,
+          user_id: userId,
           order_number: orderNum,
           total_cents: totalCents,
           status: 'pending',

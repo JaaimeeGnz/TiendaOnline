@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
 const CART_KEY = 'fashionmarket_cart';
+
+const supabase = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default function StripeCheckout() {
   const [loading, setLoading] = useState(false);
@@ -100,19 +106,16 @@ export default function StripeCheckout() {
     setError('');
 
     try {
-      // Obtener userId del sessionStorage (lo guarda AccountNav cuando se autentica)
-      const userSession = sessionStorage.getItem('sb-user-session');
-      let userId = null;
+      // Obtener userId del usuario autenticado en Supabase
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (userSession) {
-        try {
-          const session = JSON.parse(userSession);
-          userId = session.user?.id;
-        } catch (e) {
-          console.error('Error parsing user session:', e);
-        }
+      if (authError || !user) {
+        setError('Debes estar autenticado para realizar una compra');
+        setLoading(false);
+        return;
       }
 
+      const userId = user.id;
       console.log('📧 Email:', email, '👤 UserId:', userId);
 
       const response = await fetch('/api/stripe/checkout', {
