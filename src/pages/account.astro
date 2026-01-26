@@ -6,7 +6,7 @@
  */
 
 import PublicLayout from '../layouts/PublicLayout.astro';
-import MyOrders from '../components/islands/MyOrders';
+import { EditProfileModal, ChangePasswordModal, ChangeEmailModal, DeleteAccountModal, AddAddressModal } from '../components/islands/AccountModals';
 ---
 
 <PublicLayout title="Mi Cuenta - JGMarket">
@@ -65,9 +65,7 @@ import MyOrders from '../components/islands/MyOrders';
               </p>
             </div>
 
-            <button onclick="editProfile()" class="px-6 py-2 bg-jd-red text-white font-semibold rounded-lg hover:bg-red-700 transition">
-              Editar Perfil
-            </button>
+            <EditProfileModal client:load />
           </div>
         </section>
 
@@ -80,26 +78,28 @@ import MyOrders from '../components/islands/MyOrders';
               <p class="text-sm text-blue-900">Protege tu cuenta con una contraseña segura</p>
             </div>
 
-            <button onclick="changePassword()" class="px-6 py-3 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-900 transition w-full">
-              Cambiar Contraseña
-            </button>
+            <ChangePasswordModal client:load />
 
-            <button onclick="changeEmail()" class="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition w-full">
-              Cambiar Correo Electrónico
-            </button>
+            <ChangeEmailModal client:load />
 
             <div class="bg-red-50 border border-red-200 rounded-lg p-4 mt-8 pt-6">
               <h3 class="font-bold text-red-900 mb-3">Zona Peligrosa</h3>
-              <button onclick="deleteAccount()" class="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">
-                Eliminar Cuenta
-              </button>
+              <DeleteAccountModal client:load />
             </div>
           </div>
         </section>
 
         <!-- Orders Section -->
         <section id="orders" class="section bg-white rounded-lg shadow-sm p-8 mb-6 hidden">
-          <MyOrders client:load />
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Mis Pedidos</h2>
+          <p class="text-gray-600 mb-6">Aquí aparecerán tus pedidos cuando realices tu primera compra</p>
+          
+          <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+            <p class="text-gray-500 mb-3">Sin pedidos aún</p>
+            <a href="/productos" class="inline-block px-6 py-2 bg-jd-red text-white font-semibold rounded-lg hover:bg-red-700 transition">
+              Ir a Comprar
+            </a>
+          </div>
         </section>
 
         <!-- Addresses Section -->
@@ -108,9 +108,7 @@ import MyOrders from '../components/islands/MyOrders';
           
           <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-6">
             <p class="text-gray-500 mb-3">Sin direcciones guardadas</p>
-            <button onclick="addAddress()" class="inline-block px-6 py-2 bg-jd-red text-white font-semibold rounded-lg hover:bg-red-700 transition">
-              + Agregar Dirección
-            </button>
+            <AddAddressModal client:load />
           </div>
         </section>
       </div>
@@ -129,8 +127,8 @@ import MyOrders from '../components/islands/MyOrders';
       });
       
       if (!isAuthenticated || isGuest) {
-        console.log('❌ No autenticado - redirigiendo a /auth');
-        window.location.href = '/auth';
+        console.log('❌ No autenticado - redirigiendo a /login');
+        window.location.href = '/login';
         return;
       }
       
@@ -163,9 +161,19 @@ import MyOrders from '../components/islands/MyOrders';
         
         if (userEmailEl) userEmailEl.textContent = session.user.email || 'No disponible';
         
-        // No mostrar username por ahora (evita error 406)
+        // Traer el username desde la tabla users
         if (userNameEl) {
-          userNameEl.textContent = 'Usuario';
+          const { data: userData, error } = await supabaseClient
+            .from('users')
+            .select('username')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (userData && userData.username) {
+            userNameEl.textContent = userData.username;
+          } else {
+            userNameEl.textContent = 'No configurado';
+          }
         }
         
         if (userCreatedEl) {
@@ -181,48 +189,7 @@ import MyOrders from '../components/islands/MyOrders';
       }
     }
 
-    // Funciones para las diferentes acciones
-    function editProfile() {
-      const message = document.createElement('div');
-      message.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      message.textContent = 'Funcionalidad en desarrollo. Pronto podrás editar tu perfil';
-      document.body.appendChild(message);
-      setTimeout(() => message.remove(), 3000);
-    }
-
-    function changePassword() {
-      const message = document.createElement('div');
-      message.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      message.textContent = 'Funcionalidad en desarrollo. Pronto podrás cambiar tu contraseña';
-      document.body.appendChild(message);
-      setTimeout(() => message.remove(), 3000);
-    }
-
-    function changeEmail() {
-      const message = document.createElement('div');
-      message.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      message.textContent = 'Funcionalidad en desarrollo. Pronto podrás cambiar tu correo';
-      document.body.appendChild(message);
-      setTimeout(() => message.remove(), 3000);
-    }
-
-    function deleteAccount() {
-      const message = document.createElement('div');
-      message.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      message.textContent = 'Funcionalidad en desarrollo. Pronto podrás eliminar tu cuenta';
-      document.body.appendChild(message);
-      setTimeout(() => message.remove(), 3000);
-    }
-
-    function addAddress() {
-      const message = document.createElement('div');
-      message.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      message.textContent = 'Funcionalidad en desarrollo. Pronto podrás agregar direcciones';
-      document.body.appendChild(message);
-      setTimeout(() => message.remove(), 3000);
-    }
-
-    // Navegación entre secciones
+    // Funciones de navegación entre secciones
     document.querySelectorAll('.nav-link').forEach((link: any) => {
       link.addEventListener('click', (e: Event) => {
         e.preventDefault();
@@ -259,7 +226,7 @@ import MyOrders from '../components/islands/MyOrders';
     }
 
     // Ocultar barra amarilla en esta página
-    const promoBar = document.querySelector('.promo-bar');
+    const promoBar = document.querySelector('.promo-bar') as HTMLElement;
     if (promoBar) {
       promoBar.style.display = 'none';
     }
