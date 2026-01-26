@@ -94,11 +94,10 @@ import { EditProfileModal, ChangePasswordModal, ChangeEmailModal, DeleteAccountM
           <h2 class="text-2xl font-bold text-gray-900 mb-6">Mis Pedidos</h2>
           <p class="text-gray-600 mb-6">Aquí aparecerán tus pedidos cuando realices tu primera compra</p>
           
-          <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <p class="text-gray-500 mb-3">Sin pedidos aún</p>
-            <a href="/productos" class="inline-block px-6 py-2 bg-jd-red text-white font-semibold rounded-lg hover:bg-red-700 transition">
-              Ir a Comprar
-            </a>
+          <div id="ordersContainer" class="space-y-4">
+            <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <p class="text-gray-500 mb-3">Cargando pedidos...</p>
+            </div>
           </div>
         </section>
 
@@ -184,8 +183,95 @@ import { EditProfileModal, ChangePasswordModal, ChangeEmailModal, DeleteAccountM
           });
           userCreatedEl.textContent = createdDate;
         }
+
+        // Cargar órdenes del usuario
+        loadUserOrders(supabaseClient, session.user.id);
       } catch (error) {
         console.error('Error loading user info:', error);
+      }
+    }
+
+    // Cargar órdenes del usuario
+    async function loadUserOrders(supabaseClient: any, userId: string) {
+      try {
+        const { data: orders, error } = await supabaseClient
+          .from('orders')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        const ordersContainer = document.getElementById('ordersContainer');
+        if (!ordersContainer) return;
+
+        if (error) {
+          console.error('Error loading orders:', error);
+          ordersContainer.innerHTML = `
+            <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <p class="text-gray-500 mb-3">Sin pedidos aún</p>
+              <a href="/productos" class="inline-block px-6 py-2 bg-jd-red text-white font-semibold rounded-lg hover:bg-red-700 transition">
+                Ir a Comprar
+              </a>
+            </div>
+          `;
+          return;
+        }
+
+        if (!orders || orders.length === 0) {
+          ordersContainer.innerHTML = `
+            <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <p class="text-gray-500 mb-3">Sin pedidos aún</p>
+              <a href="/productos" class="inline-block px-6 py-2 bg-jd-red text-white font-semibold rounded-lg hover:bg-red-700 transition">
+                Ir a Comprar
+              </a>
+            </div>
+          `;
+          return;
+        }
+
+        // Mostrar las órdenes
+        const ordersHTML = orders.map((order: any) => {
+          const createdDate = new Date(order.created_at).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          
+          const statusMap: any = {
+            'pending': { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800' },
+            'confirmed': { label: 'Confirmado', color: 'bg-blue-100 text-blue-800' },
+            'shipped': { label: 'Enviado', color: 'bg-purple-100 text-purple-800' },
+            'delivered': { label: 'Entregado', color: 'bg-green-100 text-green-800' },
+            'cancelled': { label: 'Cancelado', color: 'bg-red-100 text-red-800' }
+          };
+
+          const statusInfo = statusMap[order.status] || { label: order.status, color: 'bg-gray-100 text-gray-800' };
+          const total = (order.total_cents / 100).toFixed(2);
+
+          return `
+            <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">Pedido #${order.order_number}</h3>
+                  <p class="text-sm text-gray-600">${createdDate}</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color}">
+                  ${statusInfo.label}
+                </span>
+              </div>
+              <div class="flex justify-between items-end">
+                <div>
+                  ${order.payment_method ? `<p class="text-sm text-gray-600">Pago: ${order.payment_method}</p>` : ''}
+                  ${order.notes ? `<p class="text-sm text-gray-600 mt-1">${order.notes}</p>` : ''}
+                </div>
+                <p class="text-xl font-bold text-jd-red">$${total}</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        ordersContainer.innerHTML = ordersHTML;
+      } catch (error) {
+        console.error('Error loading orders:', error);
       }
     }
 
