@@ -106,7 +106,7 @@ export default function StripeCheckout() {
     setError('');
 
     try {
-      // Obtener userId del usuario autenticado en Supabase
+      // Obtener userId y token del usuario autenticado en Supabase
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
@@ -115,12 +115,24 @@ export default function StripeCheckout() {
         return;
       }
 
+      // Obtener el access token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        setError('Error de autenticación. Por favor, inicia sesión nuevamente.');
+        setLoading(false);
+        return;
+      }
+
       const userId = user.id;
+      const accessToken = session.access_token;
       console.log('📧 Email:', email, '👤 UserId:', userId);
 
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
         body: JSON.stringify({
           items: items.map((item: any) => ({
             name: item.name || 'Producto',

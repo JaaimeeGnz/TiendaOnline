@@ -18,6 +18,30 @@ export const POST: APIRoute = async (context) => {
     const body = await context.request.json();
     const { items, userId, email } = body;
 
+    // ✅ Obtener el token del header Authorization
+    const authHeader = context.request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Token de autenticación requerido' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.substring(7); // Quitar "Bearer "
+
+    // ✅ Crear cliente autenticado con el token del usuario
+    const supabaseAuth = createClient(
+      import.meta.env.PUBLIC_SUPABASE_URL,
+      import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+      {
+        global: {
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+        },
+      }
+    );
+
     // ✅ REQUERIR AUTENTICACIÓN
     if (!userId) {
       return new Response(
@@ -79,7 +103,7 @@ export const POST: APIRoute = async (context) => {
         // Generar order_number único
         const orderNum = `PED-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
         
-        const { data, error: dbError } = await supabase.from('orders').insert({
+        const { data, error: dbError } = await supabaseAuth.from('orders').insert({
           user_id: userId,
           order_number: orderNum,
           total_cents: totalCents,
