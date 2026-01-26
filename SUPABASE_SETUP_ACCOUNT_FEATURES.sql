@@ -137,14 +137,17 @@ DROP POLICY IF EXISTS orders_insert_own ON orders;
 DROP POLICY IF EXISTS orders_update_own ON orders;
 
 -- Políticas RLS
+-- Los usuarios pueden ver sus propios pedidos
 CREATE POLICY orders_read_own ON orders
   FOR SELECT
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = user_id OR user_id IS NULL);
 
-CREATE POLICY orders_insert_own ON orders
+-- Permitir inserción desde el API (sin verificación de usuario)
+CREATE POLICY orders_insert_api ON orders
   FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (true);
 
+-- Los usuarios autenticados pueden actualizar sus propios pedidos
 CREATE POLICY orders_update_own ON orders
   FOR UPDATE
   USING (auth.uid() = user_id)
