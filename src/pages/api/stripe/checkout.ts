@@ -68,15 +68,16 @@ export const POST: APIRoute = async (context) => {
         console.log('  - items:', items.length, 'productos');
         console.log('  - total_cents:', totalCents);
         
+        // Generar order_number único
+        const orderNum = `PED-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        
         const { data, error: dbError } = await supabase.from('orders').insert({
-          session_id: session.id,
-          customer_email: email,
-          items: items,
-          subtotal_cents: subtotalCents,
-          shipping_cents: shippingCents,
+          user_id: userId || null,
+          order_number: orderNum,
           total_cents: totalCents,
-          payment_status: 'pending',
           status: 'pending',
+          payment_method: 'stripe',
+          notes: `Session ID: ${session.id}, Email: ${email}`,
         }).select();
         
         if (dbError) {
