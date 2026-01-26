@@ -184,23 +184,36 @@ import { EditProfileModal, ChangePasswordModal, ChangeEmailModal, DeleteAccountM
           userCreatedEl.textContent = createdDate;
         }
 
-        // Cargar órdenes del usuario
+        // Cargar órdenes del usuario (independiente de otros errores)
         loadUserOrders(supabaseClient, session.user.id);
       } catch (error) {
         console.error('Error loading user info:', error);
+        // Intentar cargar órdenes de todas formas
+        try {
+          const { supabaseClient } = await import('../lib/supabase');
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (session) {
+            loadUserOrders(supabaseClient, session.user.id);
+          }
+        } catch (e) {
+          console.error('Error loading orders after error:', e);
+        }
       }
     }
 
     // Cargar órdenes del usuario
     async function loadUserOrders(supabaseClient: any, userId: string) {
+      console.log('🔄 loadUserOrders() iniciada para userId:', userId);
       try {
         // Obtener el token de autenticación
         const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
         
         if (sessionError || !session?.access_token) {
-          console.error('No hay sesión de autenticación');
+          console.error('❌ No hay sesión de autenticación');
           return;
         }
+
+        console.log('✅ Session encontrada con token');
 
         // Crear cliente autenticado con el token
         const { createClient } = await import('@supabase/supabase-js');
@@ -216,11 +229,14 @@ import { EditProfileModal, ChangePasswordModal, ChangeEmailModal, DeleteAccountM
           }
         );
 
+        console.log('🔍 Consultando órdenes para userId:', userId);
         const { data: orders, error } = await supabaseAuth
           .from('orders')
           .select('*')
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
+
+        console.log('📦 Respuesta de órdenes:', { orders, error });
 
         const ordersContainer = document.getElementById('ordersContainer');
         if (!ordersContainer) return;
