@@ -194,7 +194,29 @@ import { EditProfileModal, ChangePasswordModal, ChangeEmailModal, DeleteAccountM
     // Cargar órdenes del usuario
     async function loadUserOrders(supabaseClient: any, userId: string) {
       try {
-        const { data: orders, error } = await supabaseClient
+        // Obtener el token de autenticación
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+        
+        if (sessionError || !session?.access_token) {
+          console.error('No hay sesión de autenticación');
+          return;
+        }
+
+        // Crear cliente autenticado con el token
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseAuth = createClient(
+          import.meta.env.PUBLIC_SUPABASE_URL,
+          import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+          {
+            global: {
+              headers: {
+                authorization: `Bearer ${session.access_token}`,
+              },
+            },
+          }
+        );
+
+        const { data: orders, error } = await supabaseAuth
           .from('orders')
           .select('*')
           .eq('user_id', userId)
