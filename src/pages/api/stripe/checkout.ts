@@ -18,35 +18,35 @@ export const POST: APIRoute = async (context) => {
     const body = await context.request.json();
     const { items, userId, email } = body;
 
-    // ✅ Obtener el token del header Authorization
+    // ✅ Token es OPCIONAL - solo requerido si userId está presente
+    let token: string | null = null;
     const authHeader = context.request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Token de autenticación requerido' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7); // Quitar "Bearer "
+    }
+
+    // ✅ CREAR cliente autenticado SOLO si hay token
+    let supabaseAuth = supabase;
+    if (token) {
+      supabaseAuth = createClient(
+        import.meta.env.PUBLIC_SUPABASE_URL,
+        import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+        {
+          global: {
+            headers: {
+              authorization: `Bearer ${token}`,
+            },
+          },
+        }
       );
     }
 
-    const token = authHeader.substring(7); // Quitar "Bearer "
-
-    // ✅ Crear cliente autenticado con el token del usuario
-    const supabaseAuth = createClient(
-      import.meta.env.PUBLIC_SUPABASE_URL,
-      import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
-      {
-        global: {
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    );
-
-    // ✅ REQUERIR AUTENTICACIÓN
-    if (!userId) {
+    // Email es REQUERIDO, pero userId es OPCIONAL (invitados)
+    if (!email || !email.trim()) {
       return new Response(
-        JSON.stringify({ error: 'Debes estar autenticado para realizar una compra' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'El correo es requerido' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 

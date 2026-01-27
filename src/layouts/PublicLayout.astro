@@ -718,9 +718,20 @@ const isMarcas = currentPath.startsWith('/marcas');
         if (header && !document.getElementById('guest-badge')) {
           const badge = document.createElement('div');
           badge.id = 'guest-badge';
-          badge.className = 'fixed top-24 right-4 bg-yellow-100 border-2 border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg text-sm font-semibold z-50';
-          badge.innerHTML = 'Navegando como Invitado';
+          badge.className = 'fixed top-24 right-4 bg-yellow-100 border-2 border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg text-sm font-semibold z-50 flex items-center gap-3';
+          badge.innerHTML = `
+            <span>Navegando como Invitado</span>
+            <button id="close-guest-badge" class="text-yellow-800 hover:text-yellow-900 font-bold text-lg cursor-pointer" style="background: none; border: none; padding: 0; margin: 0;">×</button>
+          `;
           document.body.appendChild(badge);
+          
+          // Agregar evento al botón de cerrar
+          const closeBtn = document.getElementById('close-guest-badge');
+          if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+              badge.remove();
+            });
+          }
         }
       } else {
         // Remover badge si no es invitado

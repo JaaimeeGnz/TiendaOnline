@@ -106,32 +106,32 @@ export default function StripeCheckout() {
     setError('');
 
     try {
-      // Obtener userId y token del usuario autenticado en Supabase
+      // Intentar obtener usuario autenticado (puede ser null para invitados)
+      let userId: string | null = null;
+      let accessToken: string | null = null;
+
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (authError || !user) {
-        setError('Debes estar autenticado para realizar una compra');
-        setLoading(false);
-        return;
+      // Si está autenticado, obtener el access token
+      if (user && !authError) {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session?.access_token) {
+          setError('Error de autenticación. Por favor, inicia sesión nuevamente.');
+          setLoading(false);
+          return;
+        }
+        userId = user.id;
+        accessToken = session.access_token;
       }
 
-      // Obtener el access token
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session?.access_token) {
-        setError('Error de autenticación. Por favor, inicia sesión nuevamente.');
-        setLoading(false);
-        return;
-      }
-
-      const userId = user.id;
-      const accessToken = session.access_token;
-      console.log('📧 Email:', email, '👤 UserId:', userId);
+      // Si es invitado, no hay token requerido
+      console.log('📧 Email:', email, '👤 UserId:', userId || 'Invitado');
 
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
+          ...(accessToken && { 'Authorization': `Bearer ${accessToken}` })
         },
         body: JSON.stringify({
           items: items.map((item: any) => ({
@@ -142,7 +142,7 @@ export default function StripeCheckout() {
             image: item.image_url || '',
           })),
           email: email.trim(),
-          userId,
+          userId: userId || null,
         }),
       });
 
