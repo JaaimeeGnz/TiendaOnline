@@ -12,23 +12,17 @@ const { data: orders, error } = await supabaseClient
     status,
     created_at,
     order_number,
-    customer_email,
     notes
   `)
   .order('created_at', { ascending: false });
 
-// Obtener los emails de los usuarios - primero desde customer_email, luego desde notes
+// Obtener los emails de los usuarios desde el campo notes
 let userEmails: Record<string, string> = {};
 if (orders && orders.length > 0) {
   orders.forEach(order => {
-    // Usar customer_email directamente si existe, sino extraer de notes
-    if (order.customer_email) {
-      userEmails[order.user_id] = order.customer_email;
-    } else {
-      // Fallback: extraer email del campo notes: "Email: jaime@gmail.com"
-      const emailMatch = order.notes?.match(/Email:\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-      userEmails[order.user_id] = emailMatch && emailMatch[1] ? emailMatch[1] : 'N/A';
-    }
+    // Extraer email del campo notes: "Email: jaime@gmail.com"
+    const emailMatch = order.notes?.match(/Email:\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+    userEmails[order.user_id] = emailMatch && emailMatch[1] ? emailMatch[1] : 'N/A';
     console.log(`📧 Order ${order.id.slice(0,8)}: email="${userEmails[order.user_id]}"`);
   });
 }
