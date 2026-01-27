@@ -69,8 +69,9 @@ export const POST: APIRoute = async ({ request, params }) => {
         try {
           console.log('📧 Preparando email de actualización de estado...');
           
-          // Obtener el email del cliente desde la orden
-          const orderEmail = data[0].customer_email || data[0].email;
+          // Extraer email del campo notes: "Session ID: ..., Email: email@example.com"
+          const emailMatch = data[0].notes?.match(/Email:\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+          const orderEmail = emailMatch && emailMatch[1] ? emailMatch[1] : null;
           
           if (orderEmail) {
             console.log('📧 Enviando email de actualización a:', orderEmail);
