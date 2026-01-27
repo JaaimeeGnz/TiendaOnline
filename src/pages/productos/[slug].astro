@@ -7,6 +7,7 @@
 import PublicLayout from '../../layouts/PublicLayout.astro';
 import ProductGallery from '../../components/product/ProductGallery.astro';
 import AddToCartButton from '../../components/islands/AddToCartButton';
+import StockDisplay from '../../components/islands/StockDisplay';
 import SizeRecommender from '../../components/islands/SizeRecommender';
 import FavoriteButton from '../../components/product/FavoriteButton';
 import { supabaseClient } from '../../lib/supabase';
@@ -118,17 +119,7 @@ const isClothing = category && clothingCategories.some(cat =>
         </div>
 
         <!-- Estado de stock -->
-        <div
-          class={`p-4 rounded-sm text-sm font-semibold ${
-            product.stock > 0
-              ? 'bg-green-50 text-green-700'
-              : 'bg-red-50 text-red-700'
-          }`}
-        >
-          {product.stock > 0
-            ? `${product.stock} unidades en stock`
-            : 'Agotado'}
-        </div>
+        <StockDisplay client:load productId={product.id} initialStock={product.stock} />
 
         <!-- Descripción -->
         <div>

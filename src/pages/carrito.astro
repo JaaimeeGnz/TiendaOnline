@@ -364,19 +364,85 @@ import StripeCheckout from "../components/islands/StripeCheckout";
 
         function removeItem(index: number): void {
             const cart = getCart();
-            cart.splice(index, 1);
-            saveCart(cart);
+            const item = cart[index];
+            
+            if (!item) return;
+
+            // Liberar stock antes de eliminar del carrito
+            console.log('🔄 Liberando stock para:', { productId: item.id, quantity: item.quantity });
+            
+            fetch('/api/cart/release-stock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId: item.id,
+                    quantity: item.quantity,
+                }),
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('✅ Stock liberado:', data);
+                    // Eliminar del carrito después de liberar stock
+                    cart.splice(index, 1);
+                    saveCart(cart);
+                } else {
+                    console.error('❌ Error liberando stock:', data);
+                    alert('Error al eliminar del carrito. Intenta de nuevo.');
+                }
+            })
+            .catch(err => {
+                console.error('❌ Error en release-stock:', err);
+                alert('Error al eliminar del carrito. Intenta de nuevo.');
+            });
         }
 
         function updateQuantity(index: number, delta: number): void {
             const cart = getCart();
-            if (cart[index]) {
-                cart[index].quantity = Math.max(
-                    1,
-                    cart[index].quantity + delta,
-                );
-                saveCart(cart);
-            }
+            if (!cart[index]) return;
+
+            const item = cart[index];
+            const oldQuantity = item.quantity;
+            const newQuantity = Math.max(1, item.quantity + delta);
+            const quantityDelta = newQuantity - oldQuantity;
+
+            // Si disminuye la cantidad, devolver stock
+            // Si aumenta, reservar más stock
+            const isReduction = quantityDelta < 0;
+            const endpoint = isReduction ? '/api/cart/release-stock' : '/api/cart/reserve-stock';
+            const absoluteDelta = Math.abs(quantityDelta);
+
+            console.log('📊 Actualizando cantidad:', {
+                oldQuantity,
+                newQuantity,
+                delta: quantityDelta,
+                endpoint,
+            });
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId: item.id,
+                    quantity: absoluteDelta,
+                }),
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('✅ Cantidad actualizada:', data);
+                    // Actualizar cantidad en el carrito
+                    cart[index].quantity = newQuantity;
+                    saveCart(cart);
+                } else {
+                    console.error('❌ Error actualizando cantidad:', data);
+                    alert(data.error || 'Error al actualizar cantidad. Intenta de nuevo.');
+                }
+            })
+            .catch(err => {
+                console.error('❌ Error en updateQuantity:', err);
+                alert('Error al actualizar cantidad. Intenta de nuevo.');
+            });
         }
 
         function updateTotals(cart: CartItem[]): void {

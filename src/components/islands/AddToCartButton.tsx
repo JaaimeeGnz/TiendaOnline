@@ -77,9 +77,28 @@ export default function AddToCartButton({
     setIsAdding(true);
 
     try {
-      // Simular pequeño delay para feedback visual
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      // 1️⃣ Reservar stock en la BD
+      console.log('📦 Reservando stock...', { productId, quantity });
+      const reserveResponse = await fetch('/api/cart/reserve-stock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId,
+          quantity,
+        }),
+      });
 
+      const reserveData = await reserveResponse.json();
+
+      if (!reserveResponse.ok) {
+        console.error('❌ Error al reservar stock:', reserveData);
+        setFeedback('error');
+        return;
+      }
+
+      console.log('✅ Stock reservado:', reserveData);
+
+      // 2️⃣ Añadir al carrito local
       const cartItem: Omit<CartItem, 'quantity'> = {
         id: productId,
         name: productName,
@@ -87,7 +106,7 @@ export default function AddToCartButton({
         price_cents: price,
         size: currentSize,
         image_url: imageUrl,
-        stock,
+        stock: reserveData.product.stockRemaining, // Stock actualizado
       };
 
       console.log('✅ Agregando al carrito:', cartItem);
