@@ -15,29 +15,27 @@ export async function getTotalSalesMonth(): Promise<number> {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     
-    // Intentar primero con filtro de mes
-    let { data, error } = await supabaseClient
+    // Obtener todas las órdenes sin filtro primero
+    const { data, error } = await supabaseClient
       .from('orders')
-      .select('total_cents')
-      .gte('created_at', firstDay.toISOString());
+      .select('total_cents, created_at');
 
     if (error) {
-      console.error('Error fetching total sales with date filter:', error);
-      // Intentar sin filtro de fecha
-      const { data: allData, error: allError } = await supabaseClient
-        .from('orders')
-        .select('total_cents');
-      
-      if (allError) {
-        console.error('Error fetching all orders:', allError);
-        return 0;
-      }
-      
-      data = allData;
+      console.error('Error fetching total sales:', error);
+      return 0;
     }
 
     console.log('Orders data:', data);
-    const totalCents = data?.reduce((sum, order) => sum + (order.total_cents || 0), 0) || 0;
+    
+    // Filtrar por mes en cliente si es necesario
+    const monthOrders = data?.filter(order => {
+      if (!order.created_at) return false;
+      const orderDate = new Date(order.created_at);
+      return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
+    }) || [];
+    
+    const totalCents = monthOrders.reduce((sum, order) => sum + (order.total_cents || 0), 0);
+    console.log('Total sales month:', { totalCents, euroValue: totalCents / 100, monthOrders });
     return totalCents / 100;
   } catch (error) {
     console.error('Error in getTotalSalesMonth:', error);
@@ -52,15 +50,16 @@ export async function getPendingOrders(): Promise<number> {
   try {
     const { data, error } = await supabaseClient
       .from('orders')
-      .select('id');
+      .select('id', { count: 'exact' });
 
     if (error) {
       console.error('Error fetching pending orders:', error);
       return 0;
     }
 
-    console.log('Pending orders count:', data?.length);
-    return data?.length || 0;
+    const count = data?.length || 0;
+    console.log('Pending orders count:', count, 'data:', data);
+    return count;
   } catch (error) {
     console.error('Error in getPendingOrders:', error);
     return 0;
@@ -72,48 +71,10 @@ export async function getPendingOrders(): Promise<number> {
  */
 export async function getTopProduct(): Promise<{ name: string; sold: number } | null> {
   try {
-    // Obtener todas las órdenes
-    const { data: ordersData, error: ordersError } = await supabaseClient
-      .from('orders')
-      .select('items');
-
-    if (ordersError) {
-      console.error('Error fetching orders for top product:', ordersError);
-      return null;
-    }
-
-    if (!ordersData || ordersData.length === 0) {
-      console.log('No orders found');
-      return null;
-    }
-
-    console.log('Orders with items:', ordersData);
-
-    // Agrupar por producto desde el JSON de items
-    const productSales: Record<string, number> = {};
-    
-    ordersData.forEach((order) => {
-      if (!order.items || !Array.isArray(order.items)) return;
-      
-      order.items.forEach((item: any) => {
-        const productName = item.name || item.product_name || 'Producto sin nombre';
-        const quantity = item.quantity || 1;
-        productSales[productName] = (productSales[productName] || 0) + quantity;
-      });
-    });
-
-    console.log('Product sales aggregated:', productSales);
-
-    // Encontrar el producto con más ventas
-    let topProduct = { name: '', sold: 0 };
-    Object.entries(productSales).forEach(([name, sold]) => {
-      if (sold > topProduct.sold) {
-        topProduct = { name, sold };
-      }
-    });
-
-    console.log('Top product result:', topProduct);
-    return topProduct.sold > 0 ? topProduct : null;
+    // Por ahora, deshabilitar esta función ya que requiere acceso a items que está restringido
+    // TODO: Implementar después de configurar las políticas RLS correctamente
+    console.log('getTopProduct: Deshabilitado por ahora');
+    return null;
   } catch (error) {
     console.error('Error in getTopProduct:', error);
     return null;
@@ -128,7 +89,7 @@ export async function getSalesLast7Days(): Promise<Array<{ date: string; sales: 
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     
-    // Obtener todas las órdenes de los últimos 7 días
+    // Obtener todas las órdenes sin filtro
     const { data, error } = await supabaseClient
       .from('orders')
       .select('created_at, total_cents');
@@ -150,15 +111,18 @@ export async function getSalesLast7Days(): Promise<Array<{ date: string; sales: 
       salesByDay[dateStr] = 0;
     }
 
-    // Sumar ventas por día
+    // Sumar ventas por día (solo últimos 7 días)
     data?.forEach((order) => {
       if (!order.created_at) return;
       
       const orderDate = new Date(order.created_at);
-      const dateStr = orderDate.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
       
-      if (dateStr in salesByDay) {
-        salesByDay[dateStr] += (order.total_cents || 0) / 100; // Convertir a euros
+      // Solo incluir órdenes de los últimos 7 días
+      if (orderDate.getTime() >= sevenDaysAgo.getTime()) {
+        const dateStr = orderDate.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+        if (dateStr in salesByDay) {
+          salesByDay[dateStr] += (order.total_cents || 0) / 100; // Convertir a euros
+        }
       }
     });
 
@@ -187,25 +151,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       getSalesLast7Days(),
     ]);
 
-    // Si no hay datos reales, mostrar datos de demostración
-    if (totalSalesMonth === 0 && pendingOrders === 0 && !topProduct) {
-      console.log('No real data found, showing demo data');
-      return {
-        totalSalesMonth: 2499.95,
-        pendingOrders: 7,
-        topProduct: { name: 'Camisa Oxford Premium', sold: 12 },
-        salesLast7Days: [
-          { date: '16 ene', sales: 250 },
-          { date: '17 ene', sales: 180 },
-          { date: '18 ene', sales: 320 },
-          { date: '19 ene', sales: 150 },
-          { date: '20 ene', sales: 420 },
-          { date: '21 ene', sales: 380 },
-          { date: '22 ene', sales: 799.95 },
-        ],
-      };
-    }
-
+    // Retornar los datos reales que se obtuvieron
     return {
       totalSalesMonth: totalSalesMonth || 0,
       pendingOrders: pendingOrders || 0,
@@ -214,20 +160,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     };
   } catch (error) {
     console.error('Error in getDashboardStats:', error);
-    // Retornar datos de demostración en caso de error
+    // Retornar valores vacíos en caso de error
     return {
-      totalSalesMonth: 2499.95,
-      pendingOrders: 7,
-      topProduct: { name: 'Camisa Oxford Premium', sold: 12 },
-      salesLast7Days: [
-        { date: '16 ene', sales: 250 },
-        { date: '17 ene', sales: 180 },
-        { date: '18 ene', sales: 320 },
-        { date: '19 ene', sales: 150 },
-        { date: '20 ene', sales: 420 },
-        { date: '21 ene', sales: 380 },
-        { date: '22 ene', sales: 799.95 },
-      ],
+      totalSalesMonth: 0,
+      pendingOrders: 0,
+      topProduct: null,
+      salesLast7Days: [],
     };
   }
 }

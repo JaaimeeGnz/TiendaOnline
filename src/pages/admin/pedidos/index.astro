@@ -1,0 +1,348 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { supabaseClient } from '../../../lib/supabase';
+
+// Obtener todos los pedidos
+const { data: orders, error } = await supabaseClient
+  .from('orders')
+  .select(`
+    id,
+    user_id,
+    total_cents,
+    status,
+    created_at,
+    order_number,
+    notes
+  `)
+  .order('created_at', { ascending: false });
+
+// Obtener los emails de los usuarios desde el campo notes
+let userEmails: Record<string, string> = {};
+if (orders && orders.length > 0) {
+  orders.forEach(order => {
+    // Extraer email del campo notes: "Email: jaime@gmail.com"
+    const emailMatch = order.notes?.match(/Email:\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+    userEmails[order.user_id] = emailMatch && emailMatch[1] ? emailMatch[1] : 'N/A';
+    console.log(`📧 Order ${order.id.slice(0,8)}: email="${userEmails[order.user_id]}" from notes="${order.notes}"`);
+  });
+}
+
+if (error) {
+  console.error('Error fetching orders:', error);
+}
+
+console.log('📊 Pedidos obtenidos:', orders?.map(o => ({ id: o.id, status: o.status })));
+
+// Agrupar pedidos por estado
+const pendingOrders = orders?.filter(o => o.status === 'pending') || [];
+const processingOrders = orders?.filter(o => o.status === 'processing') || [];
+const completedOrders = orders?.filter(o => o.status === 'completed') || [];
+
+console.log('📋 Pendientes:', pendingOrders.length, 'Procesamiento:', processingOrders.length, 'Completados:', completedOrders.length);
+
+// Función para formatear fecha
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+---
+
+<AdminLayout title="Gestión de Pedidos">
+  <div class="space-y-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-4xl font-black text-jd-black">Gestión de Pedidos</h1>
+        <p class="text-gray-600 mt-2">Gestiona y entrega los pedidos de tus clientes</p>
+      </div>
+      <a href="/admin" class="flex items-center gap-2 px-6 py-3 bg-jd-turquoise text-white font-bold rounded-lg hover:bg-jd-turquoise/90 active:scale-95 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Volver al Panel
+      </a>
+    </div>
+
+    <!-- Pedidos Pendientes -->
+    <div class="bg-white rounded-lg border-2 border-jd-red">
+      <div class="px-6 py-4 bg-jd-red bg-opacity-5 border-b-2 border-jd-red">
+        <h2 class="text-2xl font-bold text-jd-black">
+          Pedidos Pendientes ({pendingOrders.length})
+        </h2>
+      </div>
+      <div class="p-6">
+        {pendingOrders.length === 0 ? (
+          <p class="text-gray-500 text-center py-8">No hay pedidos pendientes</p>
+        ) : (
+          <div class="space-y-4">
+            {pendingOrders.map((order) => (
+              <div key={order.id} class="border-2 border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-3">
+                      <p class="text-sm font-bold text-gray-600">Pedido #{order.id.slice(0, 8).toUpperCase()}</p>
+                      <span class="px-3 py-1 bg-jd-red bg-opacity-10 text-jd-red text-xs font-bold rounded-full">PENDIENTE</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">
+                      <span class="font-semibold">Total:</span> {(order.total_cents / 100).toFixed(2)}€
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      <span class="font-semibold">Correo:</span> {userEmails[order.user_id] || 'N/A'}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      <span class="font-semibold">Fecha:</span> {formatDate(order.created_at)}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                      <span class="font-semibold">Número:</span> {order.order_number}
+                    </p>
+                  </div>
+                  <div class="flex gap-2">
+                    <button 
+                      type="button"
+                      data-order-id={order.id}
+                      data-status="processing"
+                      class="update-status-btn px-4 py-2 bg-jd-turquoise text-white font-bold rounded-lg hover:bg-jd-turquoise/90 active:scale-95 transition text-sm"
+                    >
+                      Confirmar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+
+    <!-- Pedidos en Procesamiento -->
+    <div class="bg-white rounded-lg border-2 border-jd-turquoise">
+      <div class="px-6 py-4 bg-jd-turquoise bg-opacity-5 border-b-2 border-jd-turquoise">
+        <h2 class="text-2xl font-bold text-jd-black">
+          En Procesamiento ({processingOrders.length})
+        </h2>
+      </div>
+      <div class="p-6">
+        {processingOrders.length === 0 ? (
+          <p class="text-gray-500 text-center py-8">No hay pedidos en procesamiento</p>
+        ) : (
+          <div class="space-y-4">
+            {processingOrders.map((order) => (
+              <div key={order.id} class="border-2 border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-3">
+                      <p class="text-sm font-bold text-gray-600">Pedido #{order.id.slice(0, 8).toUpperCase()}</p>
+                      <span class="px-3 py-1 bg-jd-turquoise bg-opacity-10 text-jd-turquoise text-xs font-bold rounded-full">EN PROCESAMIENTO</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">
+                      <span class="font-semibold">Total:</span> {(order.total_cents / 100).toFixed(2)}€
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      <span class="font-semibold">Correo:</span> {userEmails[order.user_id] || 'N/A'}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      <span class="font-semibold">Fecha:</span> {formatDate(order.created_at)}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                      <span class="font-semibold">Número:</span> {order.order_number}
+                    </p>
+                  </div>
+                  <div class="flex gap-2">
+                    <button 
+                      type="button"
+                      data-order-id={order.id}
+                      data-status="completed"
+                      class="update-status-btn px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 active:scale-95 transition text-sm"
+                    >
+                      Entregado
+                    </button>
+                    <button 
+                      type="button"
+                      data-order-id={order.id}
+                      data-status="pending"
+                      class="update-status-btn px-4 py-2 bg-gray-400 text-white font-bold rounded-lg hover:bg-gray-500 active:scale-95 transition text-sm"
+                    >
+                      Atrás
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+
+    <!-- Pedidos Completados -->
+    <div class="bg-white rounded-lg border-2 border-green-600">
+      <div class="px-6 py-4 bg-green-50 border-b-2 border-green-600">
+        <h2 class="text-2xl font-bold text-jd-black">
+          Completados ({completedOrders.length})
+        </h2>
+      </div>
+      <div class="p-6">
+        {completedOrders.length === 0 ? (
+          <p class="text-gray-500 text-center py-8">No hay pedidos completados</p>
+        ) : (
+          <div class="space-y-4">
+            {completedOrders.map((order) => (
+              <div key={order.id} class="border-2 border-gray-200 rounded-lg p-4 hover:shadow-md transition opacity-75">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-3">
+                      <p class="text-sm font-bold text-gray-600">Pedido #{order.id.slice(0, 8).toUpperCase()}</p>
+                      <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">ENTREGADO</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">
+                      <span class="font-semibold">Total:</span> {(order.total_cents / 100).toFixed(2)}€
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      <span class="font-semibold">Correo:</span> {userEmails[order.user_id] || 'N/A'}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      <span class="font-semibold">Fecha:</span> {formatDate(order.created_at)}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                      <span class="font-semibold">Número:</span> {order.order_number}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Configurar event listeners cuando la página carga
+    function setupOrderButtons() {
+      console.log('⚙️ Configurando botones de pedidos');
+      const buttons = document.querySelectorAll('.update-status-btn');
+      console.log('📊 Botones encontrados:', buttons.length);
+
+      buttons.forEach((btn, index) => {
+        const orderId = btn.getAttribute('data-order-id');
+        const status = btn.getAttribute('data-status');
+        console.log(`Botón ${index}: orderId="${orderId}", status="${status}"`);
+
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          
+          const clickedOrderId = btn.getAttribute('data-order-id');
+          const clickedStatus = btn.getAttribute('data-status');
+          
+          console.log('🔄 Click en botón - orderId:', clickedOrderId, 'status:', clickedStatus);
+          
+          if (!clickedOrderId || !clickedStatus) {
+            showErrorModal('Error: Datos del pedido incompletos');
+            return;
+          }
+          
+          try {
+            const payload = { action: 'update-status', orderId: clickedOrderId, status: clickedStatus };
+            console.log('📤 Enviando:', JSON.stringify(payload));
+            
+            const response = await fetch('/api/admin/orders', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload)
+            });
+
+            const responseData = await response.json();
+            console.log('📥 Respuesta:', responseData);
+
+            if (!response.ok) {
+              showErrorModal(responseData.error || 'Error al actualizar el pedido');
+              return;
+            }
+
+            const statusText = clickedStatus === 'processing' ? 'procesamiento' : 
+                              clickedStatus === 'completed' ? 'entregado' : 'pendiente';
+            
+            await showSuccessModal(`Pedido marcado como ${statusText}`);
+            window.location.reload();
+          } catch (error) {
+            showErrorModal('Error al actualizar el pedido');
+            console.error('❌ Error:', error);
+          }
+        });
+      });
+    }
+
+    function showSuccessModal(message) {
+      return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        
+        const modal = document.createElement('div');
+        modal.className = 'bg-white rounded-lg p-8 max-w-md w-full shadow-xl';
+        modal.innerHTML = `
+          <div class="flex items-center justify-center mb-4">
+            <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 mb-4 text-center">¡Éxito!</h2>
+          <p class="text-gray-600 mb-6 text-center">${message}</p>
+          <button id="close-btn" class="w-full px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
+            Aceptar
+          </button>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        document.getElementById('close-btn').addEventListener('click', () => {
+          overlay.remove();
+          resolve(true);
+        });
+      });
+    }
+
+    function showErrorModal(message) {
+      return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        
+        const modal = document.createElement('div');
+        modal.className = 'bg-white rounded-lg p-8 max-w-md w-full shadow-xl';
+        modal.innerHTML = `
+          <div class="flex items-center justify-center mb-4">
+            <svg class="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 mb-4 text-center">Error</h2>
+          <p class="text-gray-600 mb-6 text-center">${message}</p>
+          <button id="close-btn" class="w-full px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">
+            Aceptar
+          </button>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        document.getElementById('close-btn').addEventListener('click', () => {
+          overlay.remove();
+          resolve(true);
+        });
+      });
+    }
+
+    // Configurar botones cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupOrderButtons);
+    } else {
+      setupOrderButtons();
+    }
+  </script>
+</AdminLayout>

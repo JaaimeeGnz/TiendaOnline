@@ -50,7 +50,7 @@ export default function DashboardAnalytics() {
   return (
     <div className="space-y-8">
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Ventas Totales del Mes */}
         <div className="bg-white border-2 border-jd-turquoise rounded-lg p-6 hover:shadow-lg transition">
           <div className="flex items-start justify-between">
@@ -69,41 +69,21 @@ export default function DashboardAnalytics() {
           </div>
         </div>
 
-        {/* Pedidos Pendientes */}
-        <div className="bg-white border-2 border-jd-red rounded-lg p-6 hover:shadow-lg transition">
+        {/* Pedidos */}
+        <a href="/admin/pedidos" className="bg-white border-2 border-jd-red rounded-lg p-6 hover:shadow-lg hover:border-jd-red/80 transition cursor-pointer group">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-bold text-gray-600 uppercase">Pedidos Pendientes</p>
-              <p className="text-4xl font-black text-jd-red mt-3">{stats.pendingOrders}</p>
+              <p className="text-sm font-bold text-gray-600 uppercase">Pedidos</p>
+              <p className="text-4xl font-black text-jd-red mt-3 group-hover:scale-105 transition">{stats.pendingOrders}</p>
               <p className="text-xs text-gray-500 mt-2">Requieren atención</p>
             </div>
-            <div className="w-12 h-12 bg-jd-red bg-opacity-10 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-jd-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 bg-jd-red bg-opacity-10 rounded-lg flex items-center justify-center group-hover:bg-jd-red group-hover:bg-opacity-20 transition">
+              <svg className="w-6 h-6 text-jd-red group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
           </div>
-        </div>
-
-        {/* Producto Más Vendido */}
-        <div className="bg-white border-2 border-jd-black rounded-lg p-6 hover:shadow-lg transition">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-bold text-gray-600 uppercase">Producto Estrella</p>
-              <p className="text-2xl font-black text-jd-black mt-3 line-clamp-2">
-                {stats.topProduct?.name || 'Sin datos'}
-              </p>
-              {stats.topProduct && (
-                <p className="text-xs text-gray-500 mt-2">{stats.topProduct.sold} unidades vendidas</p>
-              )}
-            </div>
-            <div className="w-12 h-12 bg-jd-black bg-opacity-10 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-jd-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-          </div>
-        </div>
+        </a>
       </div>
 
       {/* Simple Bar Chart for Last 7 Days */}

@@ -1,6 +1,45 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import DashboardAnalytics from '../../components/islands/DashboardAnalytics';
+import { supabaseClient } from '../../lib/supabase';
+
+// Obtener todos los productos para calcular estadísticas
+const { data: allProducts, error: productsError } = await supabaseClient
+  .from('products')
+  .select('stock');
+
+// Obtener total de categorías de la tabla categories
+const { data: categories, error: categoriesError } = await supabaseClient
+  .from('categories')
+  .select('id', { count: 'exact', head: true });
+
+if (productsError) {
+  console.error('Error fetching products:', productsError);
+}
+if (categoriesError) {
+  console.error('Error fetching categories:', categoriesError);
+}
+
+const totalProducts = allProducts?.length || 0;
+
+// Obtener el total de categorías de la tabla categories
+const { count: totalCategories } = await supabaseClient
+  .from('categories')
+  .select('*', { count: 'exact', head: true });
+
+const uniqueCategories = totalCategories || 0;
+
+// Calcular stock bajo (productos con stock entre 1 y 9)
+const lowStockProducts = allProducts
+  ? allProducts.filter(p => p.stock && p.stock > 0 && p.stock < 10).length
+  : 0;
+
+// Calcular productos sin stock
+const outOfStockProducts = allProducts
+  ? allProducts.filter(p => !p.stock || p.stock === 0).length
+  : 0;
+
+console.log('Stats:', { totalProducts, uniqueCategories, lowStockProducts, outOfStockProducts, allProducts: allProducts?.slice(0, 5) });
 ---
 
 <AdminLayout title="Panel Administrador">
@@ -29,7 +68,7 @@ import DashboardAnalytics from '../../components/islands/DashboardAnalytics';
         <div class="flex items-start justify-between">
           <div>
             <p class="text-sm font-bold text-gray-600 uppercase">Total de Productos</p>
-            <p class="text-3xl font-black text-jd-black mt-3">40</p>
+            <p class="text-3xl font-black text-jd-black mt-3">{totalProducts || 0}</p>
             <p class="text-xs text-gray-500 mt-2">Activos en la tienda</p>
           </div>
           <div class="w-12 h-12 bg-jd-turquoise bg-opacity-10 rounded-lg flex items-center justify-center">
@@ -45,7 +84,7 @@ import DashboardAnalytics from '../../components/islands/DashboardAnalytics';
         <div class="flex items-start justify-between">
           <div>
             <p class="text-sm font-bold text-gray-600 uppercase">Categorías</p>
-            <p class="text-3xl font-black text-jd-black mt-3">13</p>
+            <p class="text-3xl font-black text-jd-black mt-3">{uniqueCategories || 0}</p>
             <p class="text-xs text-gray-500 mt-2">Disponibles</p>
           </div>
           <div class="w-12 h-12 bg-jd-turquoise bg-opacity-10 rounded-lg flex items-center justify-center">
@@ -61,7 +100,7 @@ import DashboardAnalytics from '../../components/islands/DashboardAnalytics';
         <div class="flex items-start justify-between">
           <div>
             <p class="text-sm font-bold text-gray-600 uppercase">Stock Bajo</p>
-            <p class="text-3xl font-black text-jd-black mt-3">5</p>
+            <p class="text-3xl font-black text-jd-black mt-3">{lowStockProducts || 0}</p>
             <p class="text-xs text-gray-500 mt-2">Requieren atención</p>
           </div>
           <div class="w-12 h-12 bg-jd-red bg-opacity-10 rounded-lg flex items-center justify-center">
@@ -77,7 +116,7 @@ import DashboardAnalytics from '../../components/islands/DashboardAnalytics';
         <div class="flex items-start justify-between">
           <div>
             <p class="text-sm font-bold text-gray-600 uppercase">Sin Stock</p>
-            <p class="text-3xl font-black text-jd-black mt-3">2</p>
+            <p class="text-3xl font-black text-jd-black mt-3">{outOfStockProducts || 0}</p>
             <p class="text-xs text-gray-500 mt-2">Agotados</p>
           </div>
           <div class="w-12 h-12 bg-jd-red bg-opacity-10 rounded-lg flex items-center justify-center">
@@ -91,11 +130,11 @@ import DashboardAnalytics from '../../components/islands/DashboardAnalytics';
 
     <!-- Quick Actions -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <a href="/admin/productos/nuevo" class="bg-jd-red hover:bg-red-700 active:scale-95 text-white px-8 py-4 rounded-lg transition font-bold text-center flex items-center justify-center gap-3 group shadow-sm">
+      <a href="/admin/categorias" class="bg-jd-red hover:bg-red-700 active:scale-95 text-white px-8 py-4 rounded-lg transition font-bold text-center flex items-center justify-center gap-3 group shadow-sm">
         <svg class="w-6 h-6 group-hover:rotate-90 transition duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
         </svg>
-        Crear Nuevo Producto
+        Ver Categorías
       </a>
       <a href="/admin/productos" class="bg-jd-black hover:bg-jd-darkGray active:scale-95 text-white px-8 py-4 rounded-lg transition font-bold text-center flex items-center justify-center gap-3 group shadow-sm">
         <svg class="w-6 h-6 group-hover:translate-x-1 transition duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
