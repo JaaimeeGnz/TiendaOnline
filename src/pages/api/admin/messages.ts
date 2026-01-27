@@ -3,10 +3,17 @@ import { createClient } from '@supabase/supabase-js';
 
 export const prerender = false;
 
-const supabase = createClient(
-  import.meta.env.PUBLIC_SUPABASE_URL,
-  import.meta.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Faltan variables de Supabase');
+}
+
+console.log('📌 Supabase URL configurada:', !!supabaseUrl);
+console.log('📌 Supabase Key configurada:', !!supabaseKey);
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const GET: APIRoute = async ({ request }) => {
   try {

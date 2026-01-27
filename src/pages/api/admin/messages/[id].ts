@@ -3,14 +3,22 @@ import { createClient } from '@supabase/supabase-js';
 
 export const prerender = false;
 
-const supabase = createClient(
-  import.meta.env.PUBLIC_SUPABASE_URL,
-  import.meta.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Faltan variables de Supabase');
+}
+
+console.log('📌 Usando ANON_KEY para DELETE');
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const PUT: APIRoute = async ({ request, params }) => {
   try {
     const { id } = params;
+    console.log('🔄 Updating message with id:', id);
+    
     if (!id) {
       return new Response(
         JSON.stringify({ success: false, error: 'ID no proporcionado' }),
@@ -20,13 +28,13 @@ export const PUT: APIRoute = async ({ request, params }) => {
 
     const body = await request.json();
     const { status, admin_notes } = body;
+    console.log('📝 Update data:', { status, admin_notes });
 
     const { data, error } = await supabase
       .from('contact_messages')
-      .update({ status, admin_notes })
+      .update({ status, admin_notes, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .select()
-      .single();
+      .select();
 
     if (error) {
       console.error('❌ Error updating message:', error);
@@ -36,12 +44,20 @@ export const PUT: APIRoute = async ({ request, params }) => {
       );
     }
 
-    console.log('✅ Message updated:', data.id);
+    if (!data || data.length === 0) {
+      console.error('❌ No rows updated for id:', id);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Mensaje no encontrado' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('✅ Message updated:', data[0].id);
 
     return new Response(
       JSON.stringify({
         success: true,
-        data: data,
+        data: data[0],
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
@@ -67,20 +83,34 @@ export const DELETE: APIRoute = async ({ params }) => {
       );
     }
 
-    const { error } = await supabase
+    console.log('🗑️ Eliminando mensaje:', id);
+    console.log('� Usando ANON_KEY');
+
+    const { data, error } = await supabase
       .from('contact_messages')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select();
 
     if (error) {
       console.error('❌ Error deleting message:', error);
+      console.error('🔍 Error details - code:', error.code);
+      console.error('🔍 Error details - message:', error.message);
       return new Response(
         JSON.stringify({ success: false, error: 'Error al eliminar el mensaje' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('✅ Message deleted:', id);
+    if (!data || data.length === 0) {
+      console.error('❌ No rows deleted for id:', id);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Mensaje no encontrado' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('✅ Message deleted successfully:', id);
 
     return new Response(
       JSON.stringify({

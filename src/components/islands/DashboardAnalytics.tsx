@@ -50,7 +50,7 @@ export default function DashboardAnalytics() {
   return (
     <div className="space-y-8">
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Ventas Totales del Mes */}
         <div className="bg-white border-2 border-jd-turquoise rounded-lg p-6 hover:shadow-lg transition">
           <div className="flex items-start justify-between">
@@ -80,6 +80,22 @@ export default function DashboardAnalytics() {
             <div className="w-12 h-12 bg-jd-red bg-opacity-10 rounded-lg flex items-center justify-center group-hover:bg-jd-red group-hover:bg-opacity-20 transition">
               <svg className="w-6 h-6 text-jd-red group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          </div>
+        </a>
+
+        {/* Reportes */}
+        <a href="/admin/reportes" className="bg-white border-2 border-purple-500 rounded-lg p-6 hover:shadow-lg hover:border-purple-600 transition cursor-pointer group">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-bold text-gray-600 uppercase">Reportes</p>
+              <p className="text-4xl font-black text-purple-600 mt-3 group-hover:scale-105 transition">📋</p>
+              <p className="text-xs text-gray-500 mt-2">Mensajes de clientes</p>
+            </div>
+            <div className="w-12 h-12 bg-purple-500 bg-opacity-10 rounded-lg flex items-center justify-center group-hover:bg-purple-500 group-hover:bg-opacity-20 transition">
+              <svg className="w-6 h-6 text-purple-600 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
               </svg>
             </div>
           </div>

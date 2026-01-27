@@ -17,17 +17,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
     <!-- Filtros -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-          <select id="filterStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-            <option value="">Todos los estados</option>
-            <option value="new">Nuevo</option>
-            <option value="read">Leído</option>
-            <option value="resolved">Resuelto</option>
-            <option value="spam">Spam</option>
-          </select>
-        </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Búsqueda</label>
           <input 
@@ -60,14 +50,14 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Nombre</th>
             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Asunto</th>
-            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Estado</th>
+
             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Fecha</th>
             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Acciones</th>
           </tr>
         </thead>
         <tbody id="messagesTableBody" class="divide-y divide-gray-200">
           <tr>
-            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+            <td colspan="5" class="px-6 py-12 text-center text-gray-500">
               Cargando mensajes...
             </td>
           </tr>
@@ -80,7 +70,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto">
         <div class="sticky top-0 bg-gray-100 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
           <h2 id="modalTitle" class="text-lg font-semibold text-gray-900">Detalles del Mensaje</h2>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+          <button class="close-modal-btn text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
         </div>
         
         <div class="px-6 py-4">
@@ -108,26 +98,11 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
             <p id="modalMessage" class="text-gray-900 p-4 bg-gray-50 rounded-lg mt-2 whitespace-pre-wrap">-</p>
           </div>
 
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-            <select id="modalStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-              <option value="new">Nuevo</option>
-              <option value="read">Leído</option>
-              <option value="resolved">Resuelto</option>
-              <option value="spam">Spam</option>
-            </select>
-          </div>
-
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Notas de Administrador</label>
-            <textarea id="modalNotes" placeholder="Añade notas sobre este mensaje..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" rows="4"></textarea>
-          </div>
-
           <div class="flex gap-4">
-            <button onclick="saveMessage()" class="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
-              Guardar Cambios
+            <button class="delete-message-modal-btn flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">
+              Eliminar
             </button>
-            <button onclick="closeModal()" class="flex-1 px-4 py-2 bg-gray-300 text-gray-900 font-semibold rounded-lg hover:bg-gray-400 transition">
+            <button class="close-modal-btn flex-1 px-4 py-2 bg-gray-300 text-gray-900 font-semibold rounded-lg hover:bg-gray-400 transition">
               Cerrar
             </button>
           </div>
@@ -162,16 +137,10 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     // Renderizar tabla
     function renderMessages() {
       const tbody = document.getElementById('messagesTableBody');
-      const status = document.getElementById('filterStatus').value;
       const search = document.getElementById('searchInput').value.toLowerCase();
       const sort = document.getElementById('sortBy').value;
 
       let filtered = currentMessages;
-
-      // Filtrar por estado
-      if (status) {
-        filtered = filtered.filter(msg => msg.status === status);
-      }
 
       // Filtrar por búsqueda
       if (search) {
@@ -190,52 +159,32 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       }
 
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-500">No hay mensajes</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-500">No hay mensajes</td></tr>';
         return;
       }
 
       tbody.innerHTML = filtered.map(msg => `
-        <tr class="hover:bg-gray-50 cursor-pointer" onclick="openMessage('${msg.id}')">
+        <tr class="hover:bg-gray-50">
           <td class="px-6 py-4 text-sm text-gray-900">${msg.name}</td>
           <td class="px-6 py-4 text-sm text-gray-600">${msg.email}</td>
           <td class="px-6 py-4 text-sm text-gray-900 truncate">${msg.subject}</td>
-          <td class="px-6 py-4 text-sm">
-            <span class="px-3 py-1 rounded-full text-white text-xs font-semibold ${getStatusColor(msg.status)}">
-              ${getStatusLabel(msg.status)}
-            </span>
-          </td>
           <td class="px-6 py-4 text-sm text-gray-600">${new Date(msg.created_at).toLocaleDateString('es-ES')}</td>
-          <td class="px-6 py-4 text-sm">
-            <button onclick="deleteMessage('${msg.id}', event)" class="text-red-600 hover:text-red-900">Eliminar</button>
+          <td class="px-6 py-4 text-sm space-x-2">
+            <button class="text-blue-600 hover:text-blue-900 font-semibold view-message-btn" data-message-id="${msg.id}">Ver</button>
+            <button class="text-red-600 hover:text-red-900 delete-message-btn" data-message-id="${msg.id}">Eliminar</button>
           </td>
         </tr>
       `).join('');
     }
 
-    function getStatusColor(status) {
-      const colors = {
-        'new': 'bg-blue-600',
-        'read': 'bg-yellow-600',
-        'resolved': 'bg-green-600',
-        'spam': 'bg-red-600'
-      };
-      return colors[status] || 'bg-gray-600';
-    }
-
-    function getStatusLabel(status) {
-      const labels = {
-        'new': 'Nuevo',
-        'read': 'Leído',
-        'resolved': 'Resuelto',
-        'spam': 'Spam'
-      };
-      return labels[status] || status;
-    }
-
     // Abrir modal con detalles
     function openMessage(messageId) {
       const message = currentMessages.find(m => m.id === messageId);
-      if (!message) return;
+      
+      if (!message) {
+        console.error('❌ Mensaje no encontrado');
+        return;
+      }
 
       currentMessageId = messageId;
       document.getElementById('modalName').textContent = message.name;
@@ -243,9 +192,10 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       document.getElementById('modalSubject').textContent = message.subject;
       document.getElementById('modalMessage').textContent = message.message;
       document.getElementById('modalDate').textContent = new Date(message.created_at).toLocaleDateString('es-ES');
-      document.getElementById('modalStatus').value = message.status;
-      document.getElementById('modalNotes').value = message.admin_notes || '';
-      document.getElementById('messageModal').classList.remove('hidden');
+      
+      const modal = document.getElementById('messageModal');
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
     }
 
     function closeModal() {
@@ -258,30 +208,25 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
       try {
         const response = await fetch(`/api/admin/messages/${currentMessageId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            status: document.getElementById('modalStatus').value,
-            admin_notes: document.getElementById('modalNotes').value,
-          }),
+          method: 'DELETE',
         });
 
         const result = await response.json();
         if (result.success) {
           closeModal();
           loadMessages();
-          showSuccess('Mensaje actualizado correctamente');
+          showSuccess('Mensaje eliminado correctamente');
         } else {
-          showError('Error al actualizar el mensaje');
+          showError('Error al eliminar el mensaje');
         }
       } catch (error) {
-        console.error('Error saving message:', error);
-        showError('Error al guardar los cambios');
+        console.error('Error deleting message:', error);
+        showError('Error al eliminar el mensaje');
       }
     }
 
     async function deleteMessage(messageId, event) {
-      event.stopPropagation();
+      if (event) event.stopPropagation();
       if (!confirm('¿Estás seguro de que deseas eliminar este mensaje?')) return;
 
       try {
@@ -312,9 +257,33 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
     // Event listeners
     document.getElementById('refreshBtn').addEventListener('click', loadMessages);
-    document.getElementById('filterStatus').addEventListener('change', renderMessages);
     document.getElementById('searchInput').addEventListener('input', renderMessages);
     document.getElementById('sortBy').addEventListener('change', renderMessages);
+
+    // Event delegation para botones de Ver y Eliminar
+    document.getElementById('messagesTableBody').addEventListener('click', (e) => {
+      if (e.target.classList.contains('view-message-btn')) {
+        const messageId = e.target.getAttribute('data-message-id');
+        openMessage(messageId);
+      }
+      if (e.target.classList.contains('delete-message-btn')) {
+        const messageId = e.target.getAttribute('data-message-id');
+        deleteMessage(messageId, e);
+      }
+    });
+
+    // Event listeners para los botones del modal
+    const messageModal = document.getElementById('messageModal');
+    messageModal.addEventListener('click', (e) => {
+      if (e.target.classList.contains('close-modal-btn')) {
+        closeModal();
+      }
+      if (e.target.classList.contains('delete-message-modal-btn')) {
+        if (currentMessageId) {
+          saveMessage();
+        }
+      }
+    });
 
     // Cargar mensajes al iniciar
     loadMessages();

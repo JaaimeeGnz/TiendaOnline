@@ -8,6 +8,9 @@ import PublicLayout from "../../layouts/PublicLayout.astro";
 import ProductCard from "../../components/product/ProductCard.astro";
 import { supabaseClient } from "../../lib/supabase";
 
+// Pre-renderizar la página como HTML estático
+export const prerender = true;
+
 // Obtener todas las marcas para generar rutas estáticas
 export async function getStaticPaths() {
   const { data: products } = await supabaseClient

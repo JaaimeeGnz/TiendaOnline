@@ -12,6 +12,9 @@ import FavoriteButton from '../../components/product/FavoriteButton';
 import { supabaseClient } from '../../lib/supabase';
 import { formatPrice } from '../../lib/utils';
 
+// Pre-renderizar la página como HTML estático
+export const prerender = true;
+
 // Obtener todos los productos para generar rutas estáticas
 export async function getStaticPaths() {
   const { data: products } = await supabaseClient

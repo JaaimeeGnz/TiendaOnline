@@ -9,6 +9,9 @@ import ProductCard from '../../components/product/ProductCard.astro';
 import ProductFilters from '../../components/islands/ProductFilters';
 import { supabaseClient } from '../../lib/supabase';
 
+// Pre-renderizar la página como HTML estático
+export const prerender = true;
+
 // Obtener todas las categorías para generar rutas estáticas
 export async function getStaticPaths() {
   const { data: categories } = await supabaseClient

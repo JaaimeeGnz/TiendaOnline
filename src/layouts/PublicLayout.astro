@@ -573,6 +573,38 @@ const isMarcas = currentPath.startsWith('/marcas');
     const cartOverlay = document.getElementById("cart-overlay");
     const cartClose = document.getElementById("cart-close");
 
+    // Función para eliminar un producto del carrito
+    function removeFromCart(itemId) {
+      const CART_KEY = "fashionmarket_cart";
+      const stored = localStorage.getItem(CART_KEY);
+      
+      if (!stored) return;
+      
+      try {
+        const parsed = JSON.parse(stored);
+        let items = parsed.items || (Array.isArray(parsed) ? parsed : []);
+        
+        // Filtrar el item a eliminar
+        items = items.filter((item) => (item.id || item.slug) !== itemId);
+        
+        // Guardar el carrito actualizado
+        const updatedCart = { items, lastUpdated: Date.now() };
+        localStorage.setItem(CART_KEY, JSON.stringify(updatedCart));
+        
+        // Disparar evento para actualizar UI
+        window.dispatchEvent(new Event('cart-updated'));
+        window.dispatchEvent(new StorageEvent('storage', { 
+          key: CART_KEY,
+          newValue: JSON.stringify(updatedCart)
+        }));
+        
+        // Actualizar el modal si está abierto
+        updateCartModal();
+      } catch (e) {
+        console.error('Error al eliminar del carrito:', e);
+      }
+    }
+
     // Función para actualizar el modal del carrito
     function updateCartModal() {
       const CART_KEY = "fashionmarket_cart";
@@ -627,6 +659,7 @@ const isMarcas = currentPath.startsWith('/marcas');
           const itemPrice = (item.price_cents || item.price || 0) / 100;
           const itemTotal = itemPrice * item.quantity;
           subtotal += itemTotal;
+          const itemId = item.id || item.slug;
           
           return `
             <div class="border-b border-gray-700 pb-4">
@@ -637,10 +670,24 @@ const isMarcas = currentPath.startsWith('/marcas');
                   ${item.size ? `<p class="text-xs text-gray-400">Talla: ${item.size}</p>` : ''}
                   <p class="text-sm text-jd-red font-bold">€${itemPrice.toFixed(2)} x ${item.quantity}</p>
                 </div>
+                <button class="delete-cart-item p-1 hover:bg-red-600 rounded transition" data-item-id="${itemId}" title="Eliminar del carrito">
+                  <svg class="w-5 h-5 text-red-500 hover:text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                  </svg>
+                </button>
               </div>
             </div>
           `;
         }).join('');
+        
+        // Agregar event listeners a los botones de eliminar
+        document.querySelectorAll('.delete-cart-item').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const itemId = btn.getAttribute('data-item-id');
+            removeFromCart(itemId);
+          });
+        });
         
         cartTotalEl.textContent = `€${(subtotal).toFixed(2)}`;
       }
