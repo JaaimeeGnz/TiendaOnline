@@ -54,9 +54,9 @@ function saveCart(state: CartState): void {
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state));
 }
 
-// Nano Store del carrito
+// Nano Store del carrito - Inicializar desde localStorage si existe
 export const cartStore: WritableAtom<CartState> = atom<CartState>(
-  { items: [], lastUpdated: Date.now() }
+  getInitialCart()
 );
 
 /**
@@ -118,6 +118,11 @@ export function addToCart(
   cartStore.set(newState);
   saveCart(newState);
   console.log('✅ Carrito guardado en localStorage');
+  
+  // Disparar evento para sincronizar la UI
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('cart-updated', { detail: newState }));
+  }
 }
 
 /**
@@ -138,6 +143,11 @@ export function removeFromCart(productId: string, size?: string): void {
 
   cartStore.set(newState);
   saveCart(newState);
+  
+  // Disparar evento para sincronizar la UI
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('cart-updated', { detail: newState }));
+  }
 }
 
 /**
@@ -174,6 +184,11 @@ export function updateCartItemQuantity(
 
   cartStore.set(newState);
   saveCart(newState);
+  
+  // Disparar evento para sincronizar la UI
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('cart-updated', { detail: newState }));
+  }
 }
 
 /**
@@ -187,6 +202,11 @@ export function clearCart(): void {
 
   cartStore.set(newState);
   saveCart(newState);
+  
+  // Disparar evento para sincronizar la UI
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('cart-updated', { detail: newState }));
+  }
 }
 
 /**
