@@ -335,11 +335,11 @@ import StripeCheckout from "../components/islands/StripeCheckout";
 
             // Add event listeners
             listEl.querySelectorAll(".remove-item").forEach((btn) => {
-                btn.addEventListener("click", (e) => {
+                btn.addEventListener("click", async (e) => {
                     const index = parseInt(
                         (e.currentTarget as HTMLElement).dataset.index || "0",
                     );
-                    removeItem(index);
+                    await removeItem(index);
                 });
             });
 
@@ -362,7 +362,7 @@ import StripeCheckout from "../components/islands/StripeCheckout";
             });
         }
 
-        function removeItem(index: number): void {
+        async function removeItem(index: number): Promise<void> {
             const cart = getCart();
             const item = cart[index];
             
@@ -371,30 +371,33 @@ import StripeCheckout from "../components/islands/StripeCheckout";
             // Liberar stock antes de eliminar del carrito
             console.log('🔄 Liberando stock para:', { productId: item.id, quantity: item.quantity });
             
-            fetch('/api/cart/release-stock', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    productId: item.id,
-                    quantity: item.quantity,
-                }),
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('✅ Stock liberado:', data);
-                    // Eliminar del carrito después de liberar stock
-                    cart.splice(index, 1);
-                    saveCart(cart);
-                } else {
+            try {
+                const response = await fetch('/api/cart/release-stock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        productId: item.id,
+                        quantity: item.quantity,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
                     console.error('❌ Error liberando stock:', data);
                     alert('Error al eliminar del carrito. Intenta de nuevo.');
+                    return;
                 }
-            })
-            .catch(err => {
+
+                console.log('✅ Stock liberado:', data);
+                // Eliminar del carrito después de liberar stock exitosamente
+                const updatedCart = getCart();
+                updatedCart.splice(index, 1);
+                saveCart(updatedCart);
+            } catch (err) {
                 console.error('❌ Error en release-stock:', err);
                 alert('Error al eliminar del carrito. Intenta de nuevo.');
-            });
+            }
         }
 
         function updateQuantity(index: number, delta: number): void {

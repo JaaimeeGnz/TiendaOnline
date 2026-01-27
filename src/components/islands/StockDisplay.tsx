@@ -9,27 +9,52 @@ export default function StockDisplay({ productId, initialStock }: StockDisplayPr
   const [stock, setStock] = useState(initialStock);
   const [loading, setLoading] = useState(false);
 
-  // Recargar stock cada 3 segundos
+  // Recargar stock cada 5 segundos, pero solo si la pestaña está activa
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/products/${productId}`);
-        const data = await response.json();
-        
-        if (data.product && data.product.stock !== undefined) {
-          setStock(data.product.stock);
-          console.log('📊 Stock actualizado:', data.product.stock);
-        }
-      } catch (error) {
-        console.error('Error actualizando stock:', error);
-      } finally {
-        setLoading(false);
-      }
-    }, 3000);
+    let interval: NodeJS.Timeout;
+    let lastStock = initialStock;
 
-    return () => clearInterval(interval);
-  }, [productId]);
+    const updateStock = async () => {
+      // Solo hacer fetch si la página está visible
+      if (!document.hidden) {
+        try {
+          setLoading(true);
+          const response = await fetch(`/api/products/${productId}`);
+          const data = await response.json();
+          
+          if (data.product && data.product.stock !== undefined) {
+            // Solo actualizar el estado si el stock cambió
+            if (data.product.stock !== lastStock) {
+              console.log('📊 Stock actualizado:', lastStock, '->', data.product.stock);
+              setStock(data.product.stock);
+              lastStock = data.product.stock;
+            }
+          }
+        } catch (error) {
+          console.error('Error actualizando stock:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Hacer primer update inmediatamente
+    updateStock();
+
+    // Luego hacer polling cada 5 segundos
+    interval = setInterval(updateStock, 5000);
+
+    // Escuchar cambios de visibilidad de la página
+    const handleVisibilityChange = () => {
+      console.log('👀 Página visible:', !document.hidden);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [productId, initialStock]);
 
   return (
     <div
@@ -42,7 +67,6 @@ export default function StockDisplay({ productId, initialStock }: StockDisplayPr
       {stock > 0
         ? `${stock} unidades en stock`
         : 'Agotado'}
-      {loading && <span className="ml-2 text-xs opacity-50">actualizando...</span>}
     </div>
   );
 }

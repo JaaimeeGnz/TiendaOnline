@@ -273,3 +273,25 @@ export function updateCartStock(updates: Record<string, number>): void {
   cartStore.set(newState);
   saveCart(newState);
 }
+
+/**
+ * Sincroniza la store con localStorage
+ * Se usa cuando se detectan cambios externos (ej: desde otro componente)
+ */
+export function syncCartFromStorage(): void {
+  if (typeof window === 'undefined') return;
+  
+  const newCart = getInitialCart();
+  cartStore.set(newCart);
+  console.log('🔄 Carrito sincronizado desde localStorage:', newCart);
+}
+
+// Escuchar cambios de localStorage para sincronizar la store
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === CART_STORAGE_KEY) {
+      console.log('📊 Cambio detectado en localStorage, sincronizando store...');
+      syncCartFromStorage();
+    }
+  });
+}

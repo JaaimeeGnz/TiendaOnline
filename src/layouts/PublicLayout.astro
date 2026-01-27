@@ -574,7 +574,7 @@ const isMarcas = currentPath.startsWith('/marcas');
     const cartClose = document.getElementById("cart-close");
 
     // Función para eliminar un producto del carrito
-    function removeFromCart(itemId) {
+    async function removeFromCart(itemId) {
       const CART_KEY = "fashionmarket_cart";
       const stored = localStorage.getItem(CART_KEY);
       
@@ -584,6 +584,33 @@ const isMarcas = currentPath.startsWith('/marcas');
         const parsed = JSON.parse(stored);
         let items = parsed.items || (Array.isArray(parsed) ? parsed : []);
         
+        // Encontrar el item a eliminar para obtener los detalles
+        const itemToRemove = items.find((item) => (item.id || item.slug) === itemId);
+        
+        if (itemToRemove) {
+          console.log('🔄 Liberando stock desde carrito preview:', { productId: itemToRemove.id, quantity: itemToRemove.quantity });
+          
+          // Llamar al endpoint para liberar stock
+          const response = await fetch('/api/cart/release-stock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productId: itemToRemove.id,
+              quantity: itemToRemove.quantity,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            console.error('❌ Error liberando stock:', data);
+            alert('Error al eliminar del carrito. Intenta de nuevo.');
+            return;
+          }
+
+          console.log('✅ Stock liberado:', data);
+        }
+        
         // Filtrar el item a eliminar
         items = items.filter((item) => (item.id || item.slug) !== itemId);
         
@@ -591,12 +618,15 @@ const isMarcas = currentPath.startsWith('/marcas');
         const updatedCart = { items, lastUpdated: Date.now() };
         localStorage.setItem(CART_KEY, JSON.stringify(updatedCart));
         
-        // Disparar evento para actualizar UI
-        window.dispatchEvent(new Event('cart-updated'));
+        // Disparar evento para que la store de nanostores se sincronice
         window.dispatchEvent(new StorageEvent('storage', { 
           key: CART_KEY,
-          newValue: JSON.stringify(updatedCart)
+          newValue: JSON.stringify(updatedCart),
+          storageArea: localStorage
         }));
+        
+        // Disparar evento personalizado para actualizar UI
+        window.dispatchEvent(new Event('cart-updated'));
         
         // Actualizar el modal si está abierto
         updateCartModal();
@@ -682,10 +712,10 @@ const isMarcas = currentPath.startsWith('/marcas');
         
         // Agregar event listeners a los botones de eliminar
         document.querySelectorAll('.delete-cart-item').forEach((btn) => {
-          btn.addEventListener('click', (e) => {
+          btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const itemId = btn.getAttribute('data-item-id');
-            removeFromCart(itemId);
+            await removeFromCart(itemId);
           });
         });
         
