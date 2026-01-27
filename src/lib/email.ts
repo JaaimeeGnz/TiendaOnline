@@ -646,3 +646,147 @@ export async function sendInvoiceEmail(
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Enviar correo de actualización de estado de pedido
+ */
+export async function sendOrderStatusUpdateEmail(
+  email: string,
+  orderNumber: string,
+  status: string,
+  items?: any[]
+) {
+  const apiKey = getBrevoApiKey();
+  if (!apiKey) {
+    return { success: false, error: "API Key no configurada" };
+  }
+
+  // Traducir estado
+  const statusTranslations: Record<string, { title: string; message: string; icon: string; color: string }> = {
+    processing: {
+      title: "¡Tu pedido está en proceso! 📦",
+      message: "Tu pedido ha sido confirmado y está siendo preparado en nuestro almacén. Pronto recibirás más información sobre el envío.",
+      icon: "⚙️",
+      color: "#3b82f6"
+    },
+    completed: {
+      title: "¡Tu pedido ha sido enviado! 🚚",
+      message: "¡Excelente noticia! Tu pedido ha sido despachado y está en camino hacia ti. Puedes esperar la entrega en los próximos días.",
+      icon: "✓",
+      color: "#10b981"
+    }
+  };
+
+  const statusInfo = statusTranslations[status] || {
+    title: `Tu pedido: ${status}`,
+    message: `El estado de tu pedido ha sido actualizado a: ${status}`,
+    icon: "📋",
+    color: "#6b7280"
+  };
+
+  try {
+    const response = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { email: "jaimechipiona2006@gmail.com", name: "JGMarket" },
+        to: [{ email: email }],
+        subject: `Actualización de tu Pedido - Pedido #${orderNumber}`,
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(to right, #dc2626, #991b1b); color: white; padding: 30px; text-align: center;">
+              <h1 style="margin: 0; font-size: 32px;">JGMARKET</h1>
+              <p style="margin: 10px 0 0 0;">La mejor moda deportiva actual</p>
+            </div>
+            
+            <div style="padding: 30px; background-color: #f3f4f6;">
+              <h2 style="color: #1f2937; margin-top: 0;">${statusInfo.icon} ${statusInfo.title}</h2>
+              <p style="color: #4b5563; line-height: 1.6;">
+                Hola,
+              </p>
+              <p style="color: #4b5563; line-height: 1.6;">
+                ${statusInfo.message}
+              </p>
+              
+              <div style="background-color: white; border-left: 4px solid ${statusInfo.color}; padding: 20px; margin: 20px 0; border-radius: 8px;">
+                <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 16px;">Detalles del Pedido</h3>
+                
+                <div style="margin-bottom: 15px;">
+                  <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 12px;">NÚMERO DE PEDIDO</p>
+                  <p style="margin: 0; font-size: 20px; font-weight: bold; color: #dc2626;">Pedido #${orderNumber}</p>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                  <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 12px;">ESTADO</p>
+                  <p style="margin: 0; color: white; background-color: ${statusInfo.color}; padding: 8px 12px; border-radius: 6px; display: inline-block; font-weight: 600;">
+                    ${status === 'processing' ? 'En Procesamiento' : status === 'completed' ? 'Enviado' : status}
+                  </p>
+                </div>
+              </div>
+              
+              ${items && items.length > 0 ? `
+                <div style="background-color: white; padding: 20px; margin: 20px 0; border-radius: 8px;">
+                  <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 16px;">Artículos en tu Pedido</h3>
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                      <tr style="background-color: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 12px; text-align: left; color: #1f2937; font-weight: 600;">Producto</th>
+                        <th style="padding: 12px; text-align: center; color: #1f2937; font-weight: 600;">Cantidad</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${items.map(item => `
+                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                          <td style="padding: 12px; text-align: left;">${item.name || 'Producto'}</td>
+                          <td style="padding: 12px; text-align: center;">${item.quantity || 1}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              ` : ''}
+              
+              <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 6px;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600;">📞 ¿Necesitas Ayuda?</p>
+                <p style="margin: 8px 0 0 0; color: #3730a3; font-size: 14px;">
+                  Si tienes alguna pregunta sobre tu pedido, no dudes en contactarnos. Estamos aquí para ayudarte.
+                </p>
+              </div>
+              
+              <p style="color: #4b5563; line-height: 1.6; margin-top: 20px; font-size: 14px;">
+                Gracias por comprar en JGMarket. Tu satisfacción es nuestra prioridad.
+              </p>
+            </div>
+            
+            <div style="background-color: #1f2937; color: white; padding: 20px; text-align: center; font-size: 12px;">
+              <p style="margin: 0;">© 2026 JGMarket. Todos los derechos reservados.</p>
+            </div>
+          </div>
+        `,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Error de Brevo:", response.status, errorText);
+      return { success: false, error: `Error ${response.status}: ${errorText}` };
+    }
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      console.error("❌ Error parseando JSON de Brevo:", e);
+      return { success: false, error: "Error parseando respuesta de Brevo" };
+    }
+
+    console.log("✅ Email de actualización de estado enviado:", data.messageId);
+    return { success: true, messageId: data.messageId };
+  } catch (error: any) {
+    console.error("❌ Error enviando email de actualización de estado:", error);
+    return { success: false, error: error.message };
+  }
+}

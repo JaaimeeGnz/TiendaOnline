@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabaseClient } from '../../../../lib/supabase';
+import { sendOrderStatusUpdateEmail } from '../../../../lib/email';
 
 export const POST: APIRoute = async ({ request, params }) => {
   try {
@@ -62,6 +63,36 @@ export const POST: APIRoute = async ({ request, params }) => {
       }
 
       console.log('✅ Pedido actualizado:', data[0].id);
+
+      // Enviar correo de actualización de estado si es processing o completed
+      if (['processing', 'completed'].includes(status)) {
+        try {
+          console.log('📧 Preparando email de actualización de estado...');
+          
+          // Obtener el email del cliente desde la orden
+          const orderEmail = data[0].customer_email || data[0].email;
+          
+          if (orderEmail) {
+            console.log('📧 Enviando email de actualización a:', orderEmail);
+            const emailResult = await sendOrderStatusUpdateEmail(
+              orderEmail,
+              data[0].order_number,
+              status
+            );
+            
+            if (emailResult.success) {
+              console.log('✅ Email de actualización enviado correctamente');
+            } else {
+              console.warn('⚠️ Error enviando email de actualización:', emailResult.error);
+            }
+          } else {
+            console.warn('⚠️ No se encontró email del cliente para enviar notificación');
+          }
+        } catch (emailError) {
+          console.error('❌ Error enviando email de actualización:', emailError);
+          // No fallar la respuesta si hay error en email
+        }
+      }
 
       return new Response(JSON.stringify({ 
         success: true,
