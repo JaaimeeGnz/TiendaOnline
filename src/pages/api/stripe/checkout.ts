@@ -106,6 +106,7 @@ export const POST: APIRoute = async (context) => {
         const { data, error: dbError } = await supabaseAuth.from('orders').insert({
           user_id: userId,
           order_number: orderNum,
+          customer_email: email,
           total_cents: totalCents,
           status: 'pending',
           payment_method: 'stripe',
