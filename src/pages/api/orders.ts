@@ -10,19 +10,22 @@ const supabase = createClient(
 
 export const GET: APIRoute = async (context) => {
   try {
-    // Obtener el correo del cliente del header o query params
-    const authHeader = context.request.headers.get('x-customer-email');
+    // Obtener parámetros de búsqueda
+    const authHeaderEmail = context.request.headers.get('x-customer-email');
+    const authHeaderId = context.request.headers.get('x-user-id');
     const url = new URL(context.request.url);
     const emailParam = url.searchParams.get('email');
-    
-    const customerEmail = authHeader || emailParam;
-    
-    if (!customerEmail) {
-      console.warn('❌ No customer email provided');
+    const userIdParam = url.searchParams.get('userId');
+
+    const customerEmail = authHeaderEmail || emailParam;
+    const userId = authHeaderId || userIdParam;
+
+    if (!customerEmail && !userId) {
+      console.warn('❌ No customer email or user ID provided');
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           orders: [],
-          message: 'No hay correo de cliente' 
+          message: 'No se proporcionó identificación de usuario'
         }),
         {
           status: 200,
@@ -31,25 +34,34 @@ export const GET: APIRoute = async (context) => {
       );
     }
 
-    console.log('🔍 Buscando pedidos para:', customerEmail);
+    console.log(`🔍 Buscando pedidos para Email: ${customerEmail} | UserID: ${userId}`);
 
-    // Obtener los pedidos filtrando por customer_email
-    const { data: orders, error: dbError } = await supabase
+    let query = supabase
       .from('orders')
-      .select('*')
-      .eq('customer_email', customerEmail)
+      // Seleccionamos todo de orders y Mapeamos order_items a la propiedad "items"
+      .select('*, items:order_items(*)')
       .order('created_at', { ascending: false });
+
+    // Construir consulta OR: (customer_email = X) OR (user_id = Y)
+    if (customerEmail && userId) {
+      query = query.or(`customer_email.eq.${customerEmail},user_id.eq.${userId}`);
+    } else if (userId) {
+      query = query.eq('user_id', userId);
+    } else if (customerEmail) {
+      query = query.eq('customer_email', customerEmail);
+    }
+
+    const { data: orders, error: dbError } = await query;
 
     if (dbError) {
       console.error('❌ Error DB:', dbError.code, dbError.message);
-      // Si hay error, devolver lista vacía
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           orders: [],
-          message: 'No hay pedidos registrados' 
+          message: 'Error al consultar base de datos'
         }),
         {
-          status: 200,
+          status: 200, // Devolvemos 200 con array vacío para no romper el frontend
           headers: { 'Content-Type': 'application/json' },
         }
       );
@@ -67,7 +79,7 @@ export const GET: APIRoute = async (context) => {
   } catch (error: any) {
     console.error('❌ Orders API error:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         orders: [],
         message: 'Error al obtener pedidos'
       }),

@@ -21,7 +21,7 @@ export const POST: APIRoute = async (context) => {
     // ✅ Token es OPCIONAL - solo requerido si userId está presente
     let token: string | null = null;
     const authHeader = context.request.headers.get('Authorization');
-    
+
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7); // Quitar "Bearer "
     }
@@ -99,10 +99,10 @@ export const POST: APIRoute = async (context) => {
         console.log('  - customer_email:', email);
         console.log('  - items:', items.length, 'productos');
         console.log('  - total_cents:', totalCents);
-        
+
         // Generar order_number único
         const orderNum = `PED-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-        
+
         const { data, error: dbError } = await supabaseAuth.from('orders').insert({
           user_id: userId,
           order_number: orderNum,
@@ -111,7 +111,7 @@ export const POST: APIRoute = async (context) => {
           payment_method: 'stripe',
           notes: `Session ID: ${session.id}, Email: ${email}`,
         }).select();
-        
+
         if (dbError) {
           console.error('❌ Error Supabase:', {
             code: dbError.code,
@@ -126,8 +126,32 @@ export const POST: APIRoute = async (context) => {
             orderNumber = data[0].order_number;
             console.log('📦 Número de pedido:', orderNumber);
           }
-          
+
           // Enviar email de confirmación
+
+          // ✅ INSERTAR ITEMS EN ORDER_ITEMS
+          if (data && data[0] && data[0].id && items && items.length > 0) {
+            const orderId = data[0].id;
+            const orderItemsData = items.map((item: any) => ({
+              order_id: orderId,
+              product_id: item.id || null, // Asumimos que item.id es el UUID del producto
+              product_name: item.name,
+              quantity: item.quantity,
+              price_cents: Math.round(item.price * 100),
+              total_cents: Math.round(item.price * 100 * item.quantity)
+            }));
+
+            const { error: itemsError } = await supabaseAuth
+              .from('order_items')
+              .insert(orderItemsData);
+
+            if (itemsError) {
+              console.error('❌ Error guardando items del pedido:', itemsError);
+            } else {
+              console.log('✅ Items guardados correctamente en order_items');
+            }
+          }
+
           try {
             console.log('📧 Enviando email de confirmación...');
             const emailResponse = await fetch(
@@ -145,7 +169,7 @@ export const POST: APIRoute = async (context) => {
                 })
               }
             );
-            
+
             if (emailResponse.ok) {
               console.log('✅ Email de confirmación enviado');
             } else {

@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
-import { supabaseClient } from '../../lib/supabase';
 import { sendInvoiceEmail } from '../../lib/email';
+import { createClient } from '@supabase/supabase-js';
 
 // Marcar como dinámico para acceder a query parameters
 export const prerender = false;
@@ -16,11 +16,11 @@ interface InvoiceData {
 }
 
 // Función para generar número de factura único
-async function generateInvoiceNumber(): Promise<string> {
+async function generateInvoiceNumber(adminClient: any): Promise<string> {
   const year = new Date().getFullYear();
-  
+
   // Obtener el último número de factura del año
-  const { data: lastInvoice, error } = await supabaseClient
+  const { data: lastInvoice, error } = await adminClient
     .from('invoices')
     .select('invoice_number')
     .eq('type', 'invoice')
@@ -51,7 +51,8 @@ function generateInvoiceHTML(
   subtotalCents: number,
   taxCents: number,
   totalCents: number,
-  issuedDate: string
+  issuedDate: string,
+  orderNumber: string
 ): string {
   const subtotal = (subtotalCents / 100).toFixed(2);
   const tax = (taxCents / 100).toFixed(2);
@@ -60,249 +61,320 @@ function generateInvoiceHTML(
   const itemsHTML = items
     .map(
       (item: any) => {
-        // Obtener el precio unitario (puede venir en precio en euros o price_cents)
         let priceCents = item.price_cents || 0;
-        
-        // Si no tiene price_cents pero tiene price (en euros), convertir
         if (priceCents === 0 && item.price) {
           priceCents = Math.round(item.price * 100);
         }
-        
         const quantity = item.quantity || 1;
         const itemSubtotal = priceCents * quantity;
-        
+
         return `
     <tr>
-      <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.name || item.product_name || 'Producto'}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">${quantity}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">€${(priceCents / 100).toFixed(2)}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">€${(itemSubtotal / 100).toFixed(2)}</td>
+      <td style="padding: 14px 16px; border-bottom: 1px solid #eef0f3; color: #1a1a2e; font-size: 14px;">
+        <div style="font-weight: 600;">${item.name || item.product_name || 'Producto'}</div>
+        ${item.size ? `<span style="font-size: 12px; color: #6b7280;">Talla: ${item.size}</span>` : ''}
+        ${item.color ? `<span style="font-size: 12px; color: #6b7280; margin-left: 8px;">Color: ${item.color}</span>` : ''}
+      </td>
+      <td style="padding: 14px 16px; border-bottom: 1px solid #eef0f3; text-align: center; color: #374151; font-size: 14px;">${quantity}</td>
+      <td style="padding: 14px 16px; border-bottom: 1px solid #eef0f3; text-align: right; color: #374151; font-size: 14px;">€${(priceCents / 100).toFixed(2)}</td>
+      <td style="padding: 14px 16px; border-bottom: 1px solid #eef0f3; text-align: right; color: #1a1a2e; font-weight: 600; font-size: 14px;">€${(itemSubtotal / 100).toFixed(2)}</td>
     </tr>
   `;
       }
     )
     .join('');
 
-  return `
-    <!DOCTYPE html>
-    <html>
+  const taxHTML = taxCents > 0 ? `
+                <div class="total-row tax">
+                  <span>IVA (21%)</span>
+                  <span>&euro;${tax}</span>
+                </div>
+                ` : '';
+
+  return `<!DOCTYPE html>
+    <html lang="es">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Factura ${invoiceNumber} - JGMarket</title>
       <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-          font-family: Arial, sans-serif;
-          margin: 0;
-          padding: 20px;
-          background-color: #f5f5f5;
+          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+          background-color: #f0f2f5;
+          padding: 30px 20px;
+          color: #1a1a2e;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
-        .invoice {
-          max-width: 800px;
+        .invoice-wrapper {
+          max-width: 820px;
           margin: 0 auto;
-          background-color: white;
-          padding: 40px;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .action-buttons {
-          text-align: right;
-          margin-bottom: 20px;
+        .action-bar {
           display: flex;
-          gap: 10px;
+          gap: 12px;
           justify-content: flex-end;
-          flex-wrap: wrap;
+          margin-bottom: 20px;
         }
         .btn {
-          padding: 10px 20px;
+          padding: 12px 24px;
           border: none;
-          border-radius: 5px;
+          border-radius: 8px;
           cursor: pointer;
           font-size: 14px;
-          font-weight: bold;
+          font-weight: 600;
           text-decoration: none;
-          display: inline-block;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.2s;
         }
         .btn-pdf {
-          background-color: #dc2626;
+          background: linear-gradient(135deg, #dc2626, #b91c1c);
           color: white;
+          box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
         }
-        .btn-pdf:hover {
-          background-color: #991b1b;
-        }
+        .btn-pdf:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4); }
         .btn-print {
-          background-color: #1FC0A0;
-          color: white;
+          background: white;
+          color: #374151;
+          border: 2px solid #e5e7eb;
         }
-        .btn-print:hover {
-          background-color: #14b8a6;
-        }
+        .btn-print:hover { border-color: #9ca3af; background: #f9fafb; }
         @media print {
-          .action-buttons {
-            display: none;
-          }
+          body { padding: 0; background: white; }
+          .action-bar { display: none !important; }
+          .invoice-card { box-shadow: none !important; }
         }
-        .header {
+        .invoice-card {
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+          overflow: hidden;
+        }
+        .invoice-header {
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          padding: 40px;
           display: flex;
           justify-content: space-between;
-          align-items: start;
-          margin-bottom: 40px;
-          border-bottom: 2px solid #1FC0A0;
-          padding-bottom: 20px;
+          align-items: flex-start;
         }
-        .logo-section h1 {
-          margin: 0;
-          color: #000;
-          font-size: 28px;
+        .brand h1 {
+          font-size: 32px;
+          font-weight: 800;
+          color: white;
+          letter-spacing: -0.5px;
         }
-        .logo-section p {
-          margin: 5px 0 0 0;
-          color: #666;
-          font-size: 12px;
-        }
-        .invoice-details {
-          text-align: right;
-        }
-        .invoice-details .title {
-          color: #1FC0A0;
-          font-weight: bold;
-          font-size: 18px;
-          margin-bottom: 10px;
-        }
-        .invoice-details p {
-          margin: 5px 0;
+        .brand h1 span { color: #dc2626; }
+        .brand p {
+          color: rgba(255,255,255,0.6);
           font-size: 13px;
-          color: #333;
-        }
-        .customer-info {
-          margin-bottom: 30px;
-          padding: 15px;
-          background-color: #f9f9f9;
-          border-left: 4px solid #1FC0A0;
-        }
-        .customer-info h3 {
-          margin: 0 0 10px 0;
-          color: #333;
-          font-size: 14px;
+          margin-top: 4px;
+          letter-spacing: 2px;
           text-transform: uppercase;
         }
-        .customer-info p {
-          margin: 5px 0;
-          font-size: 13px;
-          color: #666;
+        .invoice-meta {
+          text-align: right;
+          color: white;
         }
+        .invoice-meta .invoice-num {
+          font-size: 22px;
+          font-weight: 700;
+          color: #dc2626;
+          margin-bottom: 8px;
+        }
+        .invoice-meta p {
+          font-size: 13px;
+          color: rgba(255,255,255,0.7);
+          margin: 3px 0;
+        }
+        .invoice-meta p strong { color: rgba(255,255,255,0.9); }
+        .invoice-body { padding: 40px; }
+        .info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+          margin-bottom: 36px;
+        }
+        .info-card {
+          background: #f8f9fb;
+          border-radius: 12px;
+          padding: 20px 24px;
+          border: 1px solid #eef0f3;
+        }
+        .info-card h3 {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          color: #9ca3af;
+          font-weight: 600;
+          margin-bottom: 12px;
+        }
+        .info-card p {
+          font-size: 14px;
+          color: #374151;
+          margin: 6px 0;
+          line-height: 1.5;
+        }
+        .info-card p strong { color: #1a1a2e; }
         table {
           width: 100%;
-          margin-bottom: 30px;
           border-collapse: collapse;
+          margin-bottom: 32px;
         }
-        table th {
-          background-color: #f0f0f0;
-          color: #333;
-          font-weight: bold;
-          padding: 12px;
+        table thead th {
+          background: #f8f9fb;
+          color: #6b7280;
+          font-weight: 600;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          padding: 14px 16px;
           text-align: left;
-          border-bottom: 2px solid #1FC0A0;
+          border-bottom: 2px solid #eef0f3;
         }
-        .totals {
-          width: 100%;
-          max-width: 400px;
-          margin-left: auto;
-          margin-right: 0;
+        .totals-section {
+          display: flex;
+          justify-content: flex-end;
+        }
+        .totals-box {
+          width: 320px;
+          background: #f8f9fb;
+          border-radius: 12px;
+          padding: 20px 24px;
+          border: 1px solid #eef0f3;
         }
         .total-row {
           display: flex;
           justify-content: space-between;
-          padding: 12px 0;
+          padding: 10px 0;
           font-size: 14px;
-          border-bottom: 1px solid #ddd;
+          color: #374151;
         }
-        .total-row.total {
-          font-weight: bold;
-          font-size: 16px;
-          color: #1FC0A0;
-          border-bottom: 2px solid #1FC0A0;
-          padding: 15px 0;
+        .total-row.subtotal { border-bottom: 1px solid #eef0f3; }
+        .total-row.tax { border-bottom: 1px solid #eef0f3; }
+        .total-row.grand-total {
+          padding-top: 14px;
+          margin-top: 4px;
+          font-size: 18px;
+          font-weight: 700;
+          color: #1a1a2e;
         }
-        .footer {
-          margin-top: 40px;
-          padding-top: 20px;
-          border-top: 1px solid #ddd;
+        .total-row.grand-total span:last-child { color: #dc2626; }
+        .invoice-footer {
+          background: #f8f9fb;
+          border-top: 1px solid #eef0f3;
+          padding: 24px 40px;
           text-align: center;
-          font-size: 11px;
-          color: #999;
+        }
+        .invoice-footer p {
+          font-size: 12px;
+          color: #9ca3af;
+          line-height: 1.6;
+        }
+        .invoice-footer .brand-footer {
+          font-weight: 700;
+          color: #1a1a2e;
+          font-size: 13px;
+          margin-top: 8px;
         }
       </style>
     </head>
     <body>
-      <div class="invoice">
-        <div class="action-buttons">
-          <button class="btn btn-pdf" onclick="downloadPDF()">Descargar PDF</button>
-        </div>
-        <div class="header">
-          <div class="logo-section">
-            <h1>JGMARKET</h1>
-            <p>Factura Electrónica</p>
-          </div>
-          <div class="invoice-details">
-            <div class="title">${invoiceNumber}</div>
-            <p><strong>Fecha:</strong> ${issuedDate}</p>
-          </div>
+      <div class="invoice-wrapper">
+        <div class="action-bar">
+          <button class="btn btn-print" onclick="window.print()">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Imprimir
+          </button>
+          <button class="btn btn-pdf" onclick="downloadPDF()">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Descargar PDF
+          </button>
         </div>
 
-        <div class="customer-info">
-          <h3>Información del Cliente</h3>
-          <p><strong>Nombre:</strong> ${customerName}</p>
-          <p><strong>Email:</strong> ${customerEmail}</p>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Producto</th>
-              <th style="text-align: center;">Cantidad</th>
-              <th style="text-align: right;">Precio Unit.</th>
-              <th style="text-align: right;">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsHTML}
-          </tbody>
-        </table>
-
-        <div class="totals">
-          <div class="total-row">
-            <span>Subtotal:</span>
-            <span>€${subtotal}</span>
+        <div class="invoice-card">
+          <div class="invoice-header">
+            <div class="brand">
+              <h1>JG<span>MARKET</span></h1>
+              <p>Factura electr&oacute;nica</p>
+            </div>
+            <div class="invoice-meta">
+              <div class="invoice-num">${invoiceNumber}</div>
+              <p><strong>Fecha:</strong> ${issuedDate}</p>
+              <p><strong>Pedido:</strong> #${orderNumber}</p>
+            </div>
           </div>
-          ${taxCents > 0 ? `
-          <div class="total-row">
-            <span>Impuestos (IVA):</span>
-            <span>€${tax}</span>
-          </div>
-          ` : ''}
-          <div class="total-row total">
-            <span>TOTAL:</span>
-            <span>€${total}</span>
-          </div>
-        </div>
 
-        <div class="footer">
-          <p>Esta es una factura electrónica generada automáticamente.</p>
-          <p>Gracias por su compra.</p>
+          <div class="invoice-body">
+            <div class="info-grid">
+              <div class="info-card">
+                <h3>Datos del Cliente</h3>
+                <p><strong>${customerName}</strong></p>
+                <p>${customerEmail}</p>
+              </div>
+              <div class="info-card">
+                <h3>Datos de la Empresa</h3>
+                <p><strong>JGMarket</strong></p>
+                <p>CIF: B-12345678</p>
+                <p>info@jgmarket.com</p>
+              </div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th style="text-align: center;">Cantidad</th>
+                  <th style="text-align: right;">Precio Unit.</th>
+                  <th style="text-align: right;">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHTML}
+              </tbody>
+            </table>
+
+            <div class="totals-section">
+              <div class="totals-box">
+                <div class="total-row subtotal">
+                  <span>Subtotal</span>
+                  <span>&euro;${subtotal}</span>
+                </div>
+                ${taxHTML}
+                <div class="total-row grand-total">
+                  <span>Total</span>
+                  <span>&euro;${total}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="invoice-footer">
+            <p>Esta es una factura electr&oacute;nica generada autom&aacute;ticamente.</p>
+            <p>Gracias por confiar en nosotros.</p>
+            <p class="brand-footer">JGMarket &mdash; Tu tienda de moda online</p>
+          </div>
         </div>
       </div>
 
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
       <script>
         function downloadPDF() {
-          const element = document.querySelector('.invoice');
+          const element = document.querySelector('.invoice-card');
+          const buttons = document.querySelector('.action-bar');
+          if (buttons) buttons.style.display = 'none';
           const opt = {
-            margin: 10,
+            margin: [10, 10, 10, 10],
             filename: 'Factura-${invoiceNumber}.pdf',
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
+            html2canvas: { scale: 2, useCORS: true },
             jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
           };
-          html2pdf().set(opt).from(element).save();
+          html2pdf().set(opt).from(element).save().then(() => {
+            if (buttons) buttons.style.display = 'flex';
+          });
         }
       </script>
     </body>
@@ -318,12 +390,21 @@ async function handleInvoiceRequest(context: any) {
   try {
     const url = context.url;
     
-    // Obtener parámetros de la URL - intentar múltiples nombres
-    let sessionId = url.searchParams?.get('id') || 
-                   url.searchParams?.get('session_id') ||
-                   url.searchParams?.get('session-id');
+    // Crear cliente admin inline
+    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+    const adminClient = createClient(supabaseUrl!, supabaseServiceKey!);
+
+    // Obtener parámetros de la URL
+    let sessionId = url.searchParams?.get('id') ||
+      url.searchParams?.get('session_id') ||
+      url.searchParams?.get('session-id');
     let orderId = url.searchParams?.get('order_id');
     
+    // Parámetros de nombre y email del cliente (del modal)
+    const paramCustomerName = url.searchParams?.get('customer_name');
+    const paramCustomerEmail = url.searchParams?.get('customer_email');
+
     // Si searchParams no funciona, intentar parsear manualmente
     if (!sessionId && (url.toString().includes('id=') || url.toString().includes('session'))) {
       let match = url.toString().match(/id=([^&]+)/);
@@ -335,7 +416,7 @@ async function handleInvoiceRequest(context: any) {
       }
     }
 
-    console.log('PDF Invoice API called with:', { sessionId, orderId, fullUrl: url.toString() });
+    console.log('PDF Invoice API called with:', { sessionId, orderId, paramCustomerName, paramCustomerEmail });
 
     if (!sessionId && !orderId) {
       return new Response(JSON.stringify({ error: 'Missing session_id or order_id' }), {
@@ -344,75 +425,54 @@ async function handleInvoiceRequest(context: any) {
       });
     }
 
-    // Obtener el pedido desde Stripe session_id o order_id
+    // Obtener el pedido con sus items desde order_items
     let order: any = null;
+    const actualOrderId = orderId || sessionId;
 
-    if (sessionId) {
-      // Buscar por session_id
-      let { data: orders, error: orderError } = await supabaseClient
+    if (actualOrderId) {
+      const { data: orders, error: orderError } = await adminClient
         .from('orders')
-        .select('*')
-        .eq('session_id', sessionId)
+        .select('*, items:order_items(*)')
+        .eq('id', actualOrderId)
         .single();
 
-      // Si no encuentra, intentar con stripe_session_id
-      if ((orderError || !orders) && sessionId) {
-        const { data: ordersAlt, error: orderErrorAlt } = await supabaseClient
-          .from('orders')
-          .select('*')
-          .eq('stripe_session_id', sessionId)
-          .single();
-        
-        orders = ordersAlt;
-        orderError = orderErrorAlt;
-      }
-
-      // Si aún no encuentra, intentar buscar por número de factura (FAC-2026-0001)
-      if ((orderError || !orders) && sessionId.startsWith('FAC-')) {
-        const { data: invoices, error: invoiceError } = await supabaseClient
-          .from('invoices')
-          .select('order_id')
-          .eq('invoice_number', sessionId)
-          .single();
-        
-        if (invoices && !invoiceError) {
-          const { data: ordersAlt, error: orderErrorAlt } = await supabaseClient
-            .from('orders')
-            .select('*')
-            .eq('id', invoices.order_id)
-            .single();
-          
-          orders = ordersAlt;
-          orderError = orderErrorAlt;
-        }
-      }
-
       if (orderError || !orders) {
-        console.error('Order not found:', orderError);
-        return new Response(JSON.stringify({ error: 'Order not found' }), {
+        console.error('Order not found by id:', orderError);
+        return new Response(JSON.stringify({ error: 'Order not found', details: orderError }), {
           status: 404,
           headers: { 'Content-Type': 'application/json' },
         });
       }
       order = orders;
-    } else if (orderId) {
-      const { data: orders, error: orderError } = await supabaseClient
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
-        .single();
-
-      if (orderError || !orders) {
-        return new Response(JSON.stringify({ error: 'Order not found' }), {
-          status: 404,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      order = orders;
+    } else {
+      return new Response(JSON.stringify({ error: 'Missing order_id or session_id' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
+    // Usar nombre/email del modal, o fallback a datos de la BD
+    let customerName = paramCustomerName || '';
+    let customerEmail = paramCustomerEmail || order.customer_email || '';
+
+    // Si no vienen del modal, intentar obtener del usuario
+    if (!customerName && order.user_id) {
+      const { data: user } = await adminClient
+        .from('users')
+        .select('full_name, email')
+        .eq('id', order.user_id)
+        .single();
+
+      if (user) {
+        customerName = customerName || user.full_name || 'Cliente';
+        customerEmail = customerEmail || user.email || '';
+      }
+    }
+    if (!customerName) customerName = 'Cliente';
+    if (!customerEmail) customerEmail = 'no-email@example.com';
+
     // Verificar si ya existe factura para este pedido
-    const { data: existingInvoice } = await supabaseClient
+    const { data: existingInvoice } = await adminClient
       .from('invoices')
       .select('*')
       .eq('order_id', order.id)
@@ -428,7 +488,7 @@ async function handleInvoiceRequest(context: any) {
       invoiceId = existingInvoice.id;
     } else {
       // Crear nueva factura
-      invoiceNumber = await generateInvoiceNumber();
+      invoiceNumber = await generateInvoiceNumber(adminClient);
 
       // Extraer items del JSON
       let items = [];
@@ -451,13 +511,13 @@ async function handleInvoiceRequest(context: any) {
       const totalCents = order.total_cents;
 
       // Guardar factura en BD
-      const { data: newInvoice, error: insertError } = await supabaseClient
+      const { data: newInvoice, error: insertError } = await adminClient
         .from('invoices')
         .insert({
           invoice_number: invoiceNumber,
           order_id: order.id,
           customer_email: order.customer_email || 'no-email@example.com',
-          customer_name: order.customer_name || order.user_name || 'Cliente',
+          customer_name: customerName,
           type: 'invoice',
           subtotal_cents: subtotalCents,
           tax_cents: taxCents,
@@ -485,6 +545,7 @@ async function handleInvoiceRequest(context: any) {
     const subtotalCents = order.subtotal_cents || order.total_cents - (order.tax_cents || 0);
     const taxCents = order.tax_cents || 0;
     const totalCents = order.total_cents;
+    const orderNumber = order.order_number || order.id.substring(0, 8).toUpperCase();
     const issuedDate = new Date().toLocaleDateString('es-ES', {
       year: 'numeric',
       month: 'long',
@@ -494,22 +555,23 @@ async function handleInvoiceRequest(context: any) {
     // Generar HTML
     const htmlContent = generateInvoiceHTML(
       invoiceNumber,
-      order.customer_name || order.user_name || 'Cliente',
-      order.customer_email || 'no-email@example.com',
+      customerName,
+      customerEmail,
       items,
       subtotalCents,
       taxCents,
       totalCents,
-      issuedDate
+      issuedDate,
+      orderNumber
     );
 
     // Enviar factura por email (sin esperar respuesta para no bloquear)
-    if (order.customer_email && order.customer_email !== 'no-email@example.com') {
+    if (customerEmail && customerEmail !== 'no-email@example.com') {
       const totalFormatted = (totalCents / 100).toFixed(2);
       sendInvoiceEmail(
-        order.customer_email,
+        customerEmail,
         invoiceNumber,
-        order.customer_name || order.user_name || 'Cliente',
+        customerName,
         htmlContent,
         `€${totalFormatted}`
       ).catch(err => console.error('Error enviando email de factura:', err));
@@ -520,7 +582,7 @@ async function handleInvoiceRequest(context: any) {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Content-Disposition': `attachment; filename="Factura-${invoiceNumber}.html"`,
+        'Content-Disposition': `inline; filename="Factura-${invoiceNumber}.html"`,
       },
     });
   } catch (error) {

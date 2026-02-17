@@ -607,7 +607,7 @@ export async function sendInvoiceEmail(
                 <p style="margin: 0 0 10px 0; color: #4b5563; font-size: 14px;">
                   Puedes descargar tu factura completa en el siguiente enlace:
                 </p>
-                <a href="http://localhost:3000/pdf/invoice?id=${invoiceNumber}" style="display: inline-block; background-color: #dc2626; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+                <a href="${import.meta.env.PUBLIC_SITE_URL}/pdf/invoice?id=${invoiceNumber}" style="display: inline-block; background-color: #dc2626; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
                   Ver Factura Completa
                 </a>
               </div>
