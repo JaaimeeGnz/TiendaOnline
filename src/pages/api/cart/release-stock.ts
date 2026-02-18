@@ -41,7 +41,7 @@ export const POST: APIRoute = async ({ request }) => {
       .single();
 
     if (productError || !product) {
-      console.error('❌ Producto no encontrado:', productId);
+      console.error('Producto no encontrado:', productId);
       return new Response(
         JSON.stringify({ error: 'Producto no encontrado' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request }) => {
       .single();
 
     if (fetchError || !sizeData) {
-      console.error('❌ Talla no encontrada:', { productId, size });
+      console.error('Talla no encontrada:', { productId, size });
       return new Response(
         JSON.stringify({ error: `Talla ${size} no encontrada para este producto` }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
@@ -72,14 +72,14 @@ export const POST: APIRoute = async ({ request }) => {
       .eq('id', sizeData.id);
 
     if (updateError) {
-      console.error('❌ Error al devolver stock:', updateError);
+      console.error('Error al devolver stock:', updateError);
       return new Response(
         JSON.stringify({ error: 'Error al devolver stock' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`✅ Stock devuelto para ${product.name} talla ${size}:`, {
+    console.log(`Stock devuelto para ${product.name} talla ${size}:`, {
       productId,
       size,
       cantidad: quantity,
@@ -102,7 +102,7 @@ export const POST: APIRoute = async ({ request }) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
-    console.error('❌ Error en release-stock:', error);
+    console.error('Error en release-stock:', error);
     return new Response(
       JSON.stringify({ error: 'Error interno del servidor' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

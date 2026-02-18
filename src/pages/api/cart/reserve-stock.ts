@@ -41,7 +41,7 @@ export const POST: APIRoute = async ({ request }) => {
       .single();
 
     if (productError || !product) {
-      console.error('❌ Producto no encontrado:', productId);
+      console.error('Producto no encontrado:', productId);
       return new Response(
         JSON.stringify({ error: 'Producto no encontrado' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request }) => {
       .single();
 
     if (fetchError || !sizeData) {
-      console.error('❌ Talla no encontrada:', { productId, size });
+      console.error('Talla no encontrada:', { productId, size });
       return new Response(
         JSON.stringify({ error: `Talla ${size} no encontrada para este producto` }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
@@ -66,7 +66,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Verificar stock disponible para esa talla
     if (sizeData.stock < quantity) {
-      console.warn(`⚠️ Stock insuficiente para ${product.name} talla ${size}:`, {
+      console.warn(`Stock insuficiente para ${product.name} talla ${size}:`, {
         disponible: sizeData.stock,
         solicitado: quantity,
       });
@@ -87,14 +87,14 @@ export const POST: APIRoute = async ({ request }) => {
       .eq('id', sizeData.id);
 
     if (updateError) {
-      console.error('❌ Error al actualizar stock:', updateError);
+      console.error('Error al actualizar stock:', updateError);
       return new Response(
         JSON.stringify({ error: 'Error al actualizar stock' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`✅ Stock reservado para ${product.name} talla ${size}:`, {
+    console.log(`Stock reservado para ${product.name} talla ${size}:`, {
       productId,
       size,
       cantidad: quantity,
@@ -117,7 +117,7 @@ export const POST: APIRoute = async ({ request }) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
-    console.error('❌ Error en reserve-stock:', error);
+    console.error('Error en reserve-stock:', error);
     return new Response(
       JSON.stringify({ error: 'Error interno del servidor' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

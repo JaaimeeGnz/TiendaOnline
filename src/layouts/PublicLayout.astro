@@ -588,7 +588,7 @@ const isMarcas = currentPath.startsWith('/marcas');
         const itemToRemove = items.find((item) => (item.id || item.slug) === itemId);
         
         if (itemToRemove) {
-          console.log('🔄 Liberando stock desde carrito preview:', { productId: itemToRemove.id, quantity: itemToRemove.quantity, size: itemToRemove.size });
+          console.log('Liberando stock desde carrito preview:', { productId: itemToRemove.id, quantity: itemToRemove.quantity, size: itemToRemove.size });
           
           // Llamar al endpoint para liberar stock
           const response = await fetch('/api/cart/release-stock', {
@@ -604,12 +604,12 @@ const isMarcas = currentPath.startsWith('/marcas');
           const data = await response.json();
 
           if (!response.ok || !data.success) {
-            console.error('❌ Error liberando stock:', data);
+            console.error('Error liberando stock:', data);
             alert('Error al eliminar del carrito. Intenta de nuevo.');
             return;
           }
 
-          console.log('✅ Stock liberado:', data);
+          console.log('Stock liberado:', data);
         }
         
         // Filtrar el item a eliminar
@@ -838,7 +838,7 @@ const isMarcas = currentPath.startsWith('/marcas');
       // Esto es un backup para casos de timing
       if (!isAuthenticated && !isGuest) {
         // No hacer nada aquí - el servidor ya se encargó
-        console.log('⚠️ No autenticado, servidor debería haber redirigido');
+        console.log('No autenticado, servidor debería haber redirigido');
       }
     }
     
@@ -933,7 +933,7 @@ const isMarcas = currentPath.startsWith('/marcas');
             throw new Error('Error en logout');
           }
           
-          console.log('✅ Logout completado');
+          console.log('Logout completado');
         } catch (err) {
           console.error('Error logging out:', err);
           // Aún así redirigir

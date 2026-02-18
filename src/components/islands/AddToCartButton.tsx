@@ -83,13 +83,13 @@ export default function AddToCartButton({
     
     // Validaciones
     if (sizeStock === 0) {
-      console.error('❌ Sin stock para esta talla');
+      console.error('Sin stock para esta talla');
       setFeedback('error');
       return;
     }
 
     if (!currentSize || currentSize === '') {
-      console.error('❌ Sin talla seleccionada');
+      console.error('Sin talla seleccionada');
       setFeedback('error');
       return;
     }
@@ -97,8 +97,8 @@ export default function AddToCartButton({
     setIsAdding(true);
 
     try {
-      // 1️⃣ Reservar stock en la BD (ahora con talla)
-      console.log('📦 Reservando stock...', { productId, quantity, size: currentSize });
+      // Reservar stock en la BD (ahora con talla)
+      console.log('Reservando stock...', { productId, quantity, size: currentSize });
       const reserveResponse = await fetch('/api/cart/reserve-stock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -112,14 +112,14 @@ export default function AddToCartButton({
       const reserveData = await reserveResponse.json();
 
       if (!reserveResponse.ok) {
-        console.error('❌ Error al reservar stock:', reserveData);
+        console.error('Error al reservar stock:', reserveData);
         setFeedback('error');
         return;
       }
 
-      console.log('✅ Stock reservado:', reserveData);
+      console.log('Stock reservado:', reserveData);
 
-      // 2️⃣ Añadir al carrito local
+      // Añadir al carrito local
       const cartItem: Omit<CartItem, 'quantity'> = {
         id: productId,
         name: productName,
@@ -130,7 +130,7 @@ export default function AddToCartButton({
         stock: reserveData.product.stockRemaining, // Stock actualizado
       };
 
-      console.log('✅ Agregando al carrito:', cartItem);
+      console.log('Agregando al carrito:', cartItem);
       addToCart(cartItem, quantity);
       setFeedback('success');
 
@@ -218,7 +218,7 @@ export default function AddToCartButton({
       {/* Mensaje informativo */}
       {sizeStock > 0 && sizeStock <= 5 && selectedSize && (
         <p className="text-xs text-amber-600 font-sans text-center">
-          ⚠ Solo quedan {sizeStock} unidades de la talla {selectedSize}
+          Solo quedan {sizeStock} unidades de la talla {selectedSize}
         </p>
       )}
     </div>

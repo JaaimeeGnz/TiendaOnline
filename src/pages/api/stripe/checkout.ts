@@ -18,7 +18,7 @@ export const POST: APIRoute = async (context) => {
     const body = await context.request.json();
     const { items, userId, email } = body;
 
-    // ✅ Token es OPCIONAL - solo requerido si userId está presente
+    // Token es OPCIONAL - solo requerido si userId está presente
     let token: string | null = null;
     const authHeader = context.request.headers.get('Authorization');
 
@@ -26,7 +26,7 @@ export const POST: APIRoute = async (context) => {
       token = authHeader.substring(7); // Quitar "Bearer "
     }
 
-    // ✅ CREAR cliente autenticado SOLO si hay token
+    // CREAR cliente autenticado SOLO si hay token
     let supabaseAuth = supabase;
     if (token) {
       supabaseAuth = createClient(
@@ -113,23 +113,23 @@ export const POST: APIRoute = async (context) => {
         }).select();
 
         if (dbError) {
-          console.error('❌ Error Supabase:', {
+          console.error('Error Supabase:', {
             code: dbError.code,
             message: dbError.message,
             details: dbError.details,
             hint: dbError.hint,
           });
         } else {
-          console.log('✅ Pedido guardado correctamente:', data);
+          console.log('Pedido guardado correctamente:', data);
           // Obtener el order_number
           if (data && data[0] && data[0].order_number) {
             orderNumber = data[0].order_number;
-            console.log('📦 Número de pedido:', orderNumber);
+            console.log('Número de pedido:', orderNumber);
           }
 
           // Enviar email de confirmación
 
-          // ✅ INSERTAR ITEMS EN ORDER_ITEMS
+          // INSERTAR ITEMS EN ORDER_ITEMS
           if (data && data[0] && data[0].id && items && items.length > 0) {
             const orderId = data[0].id;
             const orderItemsData = items.map((item: any) => ({
@@ -147,9 +147,9 @@ export const POST: APIRoute = async (context) => {
               .insert(orderItemsData);
 
             if (itemsError) {
-              console.error('❌ Error guardando items del pedido:', itemsError);
+              console.error('Error guardando items del pedido:', itemsError);
             } else {
-              console.log('✅ Items guardados correctamente en order_items');
+              console.log('Items guardados correctamente en order_items');
             }
           }
 
@@ -172,19 +172,19 @@ export const POST: APIRoute = async (context) => {
             );
 
             if (emailResponse.ok) {
-              console.log('✅ Email de confirmación enviado');
+              console.log('Email de confirmación enviado');
             } else {
-              console.warn('⚠️ Error enviando email de confirmación:', await emailResponse.text());
+              console.warn('Error enviando email de confirmación:', await emailResponse.text());
             }
           } catch (emailError) {
-            console.error('❌ Error en llamada a send-order-confirmation:', emailError);
+            console.error('Error en llamada a send-order-confirmation:', emailError);
           }
         }
       } catch (dbError) {
-        console.error('❌ Error guardando orden:', dbError);
+        console.error('Error guardando orden:', dbError);
       }
     } else {
-      console.warn('⚠️ No se puede guardar - session.id:', session.id, 'email:', email);
+      console.warn('No se puede guardar - session.id:', session.id, 'email:', email);
     }
 
     return new Response(

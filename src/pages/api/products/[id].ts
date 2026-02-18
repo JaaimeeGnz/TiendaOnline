@@ -32,7 +32,7 @@ export const GET: APIRoute = async ({ params, url }) => {
       .single();
 
     if (error || !product) {
-      console.error('❌ Producto no encontrado:', id);
+      console.error('Producto no encontrado:', id);
       return new Response(
         JSON.stringify({ error: 'Producto no encontrado' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
@@ -82,7 +82,7 @@ export const GET: APIRoute = async ({ params, url }) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
-    console.error('❌ Error en GET /api/products/[id]:', error);
+    console.error('Error en GET /api/products/[id]:', error);
     return new Response(
       JSON.stringify({ error: 'Error interno del servidor' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

@@ -80,10 +80,10 @@ export function addToCart(
   item: Omit<CartItem, 'quantity'>,
   quantity: number = 1
 ): void {
-  console.log('📦 addToCart llamado con:', { item, quantity });
+  console.log('addToCart llamado con:', { item, quantity });
   
   const currentCart = getCart();
-  console.log('📦 Carrito actual:', currentCart);
+  console.log('Carrito actual:', currentCart);
   
   const existingItem = currentCart.items.find(
     (i: CartItem) => i.id === item.id && i.size === item.size
@@ -295,14 +295,14 @@ export function syncCartFromStorage(): void {
   
   const newCart = getInitialCart();
   cartStore.set(newCart);
-  console.log('🔄 Carrito sincronizado desde localStorage:', newCart);
+  console.log('Carrito sincronizado desde localStorage:', newCart);
 }
 
 // Escuchar cambios de localStorage para sincronizar la store
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
     if (e.key === CART_STORAGE_KEY) {
-      console.log('📊 Cambio detectado en localStorage, sincronizando store...');
+      console.log('Cambio detectado en localStorage, sincronizando store...');
       syncCartFromStorage();
     }
   });
