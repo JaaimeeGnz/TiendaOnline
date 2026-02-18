@@ -138,7 +138,8 @@ export const POST: APIRoute = async (context) => {
               product_name: item.name,
               quantity: item.quantity,
               price_cents: Math.round(item.price * 100),
-              total_cents: Math.round(item.price * 100 * item.quantity)
+              total_cents: Math.round(item.price * 100 * item.quantity),
+              size: item.size || null,
             }));
 
             const { error: itemsError } = await supabaseAuth

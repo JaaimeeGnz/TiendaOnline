@@ -24,7 +24,6 @@ export const POST: APIRoute = async ({ request, params }) => {
     const name = formData.get('name')?.toString();
     const description = formData.get('description')?.toString();
     const price_cents = parseInt(formData.get('price_cents')?.toString() || '0');
-    const stock = parseInt(formData.get('stock')?.toString() || '0');
     const category_id = formData.get('category_id')?.toString();
     const color = formData.get('color')?.toString();
     const material = formData.get('material')?.toString();
@@ -34,6 +33,7 @@ export const POST: APIRoute = async ({ request, params }) => {
     const is_active = formData.get('is_active') === 'on';
     const images_json = formData.get('images_json')?.toString();
     const existing_images_json = formData.get('existing_images')?.toString();
+    const size_stocks_json = formData.get('size_stocks_json')?.toString();
 
     // Validar campos requeridos
     if (!name || !description || !price_cents || !category_id) {
@@ -65,14 +65,13 @@ export const POST: APIRoute = async ({ request, params }) => {
       }
     }
 
-    // Actualizar en Supabase
+    // Actualizar producto en Supabase (sin stock global)
     const { error } = await supabaseClient
       .from('products')
       .update({
         name,
         description,
         price_cents,
-        stock,
         category_id,
         images: images.length > 0 ? images : null,
         color: color || null,
@@ -90,6 +89,42 @@ export const POST: APIRoute = async ({ request, params }) => {
         JSON.stringify({ error: 'Error al actualizar el producto' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Actualizar stock por talla en product_sizes
+    if (size_stocks_json) {
+      try {
+        const sizeStocks: { size: string; stock: number }[] = JSON.parse(size_stocks_json);
+        
+        // Calcular stock total para mantener el campo products.stock sincronizado
+        let totalStock = 0;
+        
+        for (const ss of sizeStocks) {
+          totalStock += ss.stock;
+          const { error: sizeError } = await supabaseClient
+            .from('product_sizes')
+            .upsert({
+              product_id: id,
+              size: ss.size,
+              stock: ss.stock,
+              updated_at: new Date().toISOString(),
+            }, {
+              onConflict: 'product_id,size',
+            });
+
+          if (sizeError) {
+            console.error(`Error actualizando stock de talla ${ss.size}:`, sizeError);
+          }
+        }
+
+        // Sincronizar stock total en products para compatibilidad
+        await supabaseClient
+          .from('products')
+          .update({ stock: totalStock })
+          .eq('id', id);
+      } catch (e) {
+        console.error('Error parseando size_stocks_json:', e);
+      }
     }
 
     // Redirigir a la lista de productos

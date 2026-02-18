@@ -246,12 +246,24 @@ export function validateCart(): boolean {
 /**
  * Aplica cambios de stock a los artículos del carrito
  * (util para sincronizar con servidor)
- * @param updates Map de productId -> nuevo stock
+ * @param updates Map de "productId:size" -> nuevo stock
  */
 export function updateCartStock(updates: Record<string, number>): void {
   const currentCart = getCart();
   const newItems = currentCart.items
     .map((item: CartItem) => {
+      // Buscar por clave compuesta "productId:size"
+      const key = `${item.id}:${item.size || ''}`;
+      if (key in updates) {
+        const newStock = updates[key];
+        if (newStock <= 0) return null;
+        return {
+          ...item,
+          stock: newStock,
+          quantity: Math.min(item.quantity, newStock),
+        };
+      }
+      // También buscar por solo productId (compatibilidad)
       if (item.id in updates) {
         const newStock = updates[item.id];
         if (newStock <= 0) return null;

@@ -28,6 +28,13 @@ if (productError || !product) {
   return Astro.redirect('/admin/productos');
 }
 
+// Obtener stock por tallas
+const { data: productSizes } = await supabaseClient
+  .from('product_sizes')
+  .select('size, stock')
+  .eq('product_id', id)
+  .order('size');
+
 // Obtener categorías para el select
 const { data: categories } = await supabaseClient.from('categories').select('*');
 ---
@@ -90,20 +97,32 @@ const { data: categories } = await supabaseClient.from('categories').select('*')
           />
         </div>
 
-        <!-- Stock -->
+        <!-- Stock por Talla -->
         <div>
-          <label for="stock" class="block text-sm font-semibold text-primary-800 mb-2">
-            Stock Disponible
+          <label class="block text-sm font-semibold text-primary-800 mb-2">
+            Stock por Talla
           </label>
-          <input
-            type="number"
-            id="stock"
-            name="stock"
-            value={product.stock}
-            required
-            min="0"
-            class="w-full px-4 py-2 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
-          />
+          <div id="size-stock-container" class="space-y-2">
+            {productSizes && productSizes.length > 0 ? (
+              productSizes.map((ps: { size: string; stock: number }) => (
+                <div class="flex items-center gap-3">
+                  <span class="w-16 text-sm font-medium text-primary-800">{ps.size}</span>
+                  <input
+                    type="number"
+                    name={`stock_${ps.size}`}
+                    value={ps.stock}
+                    min="0"
+                    class="w-24 px-3 py-1 border border-primary-300 rounded-sm text-sm focus:outline-none focus:border-primary-800 focus:ring-2 focus:ring-primary-100"
+                  />
+                  <span class="text-xs text-gray-500">unidades</span>
+                </div>
+              ))
+            ) : (
+              <p class="text-sm text-gray-500">No hay tallas configuradas. Se usarán las tallas por defecto del producto.</p>
+            )}
+          </div>
+          <input type="hidden" id="size_stocks_json" name="size_stocks_json" value={JSON.stringify(productSizes || [])} />
+          <p class="text-xs text-gray-500 mt-2">El stock se gestiona individualmente por cada talla.</p>
         </div>
       </div>
 
@@ -271,6 +290,23 @@ const { data: categories } = await supabaseClient.from('categories').select('*')
   </div>
 
   <script>
+    // Recopilar stock por talla antes de enviar el formulario
+    const form = document.querySelector('form');
+    if (form) {
+      form.addEventListener('submit', () => {
+        const sizeStocks: { size: string; stock: number }[] = [];
+        const inputs = document.querySelectorAll<HTMLInputElement>('input[name^="stock_"]');
+        inputs.forEach(input => {
+          const size = input.name.replace('stock_', '');
+          sizeStocks.push({ size, stock: parseInt(input.value) || 0 });
+        });
+        const hidden = document.getElementById('size_stocks_json') as HTMLInputElement;
+        if (hidden) {
+          hidden.value = JSON.stringify(sizeStocks);
+        }
+      });
+    }
+
     function removeImage(index: number) {
       const existingImagesInput = document.querySelector('input[name="existing_images"]');
       if (existingImagesInput) {

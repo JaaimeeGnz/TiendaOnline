@@ -114,6 +114,28 @@ export async function getCustomerInvoices(customerEmail: string): Promise<Invoic
 }
 
 /**
+ * Obtiene TODAS las facturas (para admin)
+ */
+export async function getAllInvoices(): Promise<Invoice[]> {
+  try {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('*')
+      .order('issued_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all invoices:', error);
+      return [];
+    }
+
+    return (data || []) as Invoice[];
+  } catch (error) {
+    console.error('Error in getAllInvoices:', error);
+    return [];
+  }
+}
+
+/**
  * Obtiene una factura específica
  */
 export async function getInvoice(invoiceId: string): Promise<Invoice | null> {

@@ -17,6 +17,7 @@ export const POST: APIRoute = async ({ request }) => {
     const sku = formData.get('sku')?.toString();
     const featured = formData.get('featured') === 'on';
     const images_json = formData.get('images_json')?.toString();
+    const size_stocks_json = formData.get('size_stocks_json')?.toString();
 
     // Validar campos requeridos
     if (!name || !description || !price_cents || !category_id) {
@@ -60,7 +61,7 @@ export const POST: APIRoute = async ({ request }) => {
         featured,
         is_active: true,
       },
-    ]);
+    ]).select();
 
     if (error) {
       console.error('Supabase error:', error);
@@ -68,6 +69,34 @@ export const POST: APIRoute = async ({ request }) => {
         JSON.stringify({ error: 'Error al crear el producto' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Crear registros de stock por talla en product_sizes
+    if (data && data[0] && size_stocks_json) {
+      try {
+        const sizeStocks: { size: string; stock: number }[] = JSON.parse(size_stocks_json);
+        const productId = data[0].id;
+
+        const sizeRows = sizeStocks
+          .filter(ss => ss.stock > 0 || true) // Insertar todas las tallas, incluso con stock 0
+          .map(ss => ({
+            product_id: productId,
+            size: ss.size,
+            stock: ss.stock,
+          }));
+
+        if (sizeRows.length > 0) {
+          const { error: sizeError } = await supabaseClient
+            .from('product_sizes')
+            .insert(sizeRows);
+
+          if (sizeError) {
+            console.error('Error creando stock por talla:', sizeError);
+          }
+        }
+      } catch (e) {
+        console.error('Error parseando size_stocks_json:', e);
+      }
     }
 
     return new Response(

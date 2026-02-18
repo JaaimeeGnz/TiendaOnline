@@ -10,11 +10,13 @@ const supabase = createClient(
 
 /**
  * GET /api/products/[id]
- * Obtiene información actualizada de un producto (incluyendo stock actual)
+ * Obtiene información actualizada de un producto (incluyendo stock por talla)
+ * Query params opcionales: ?size=M (para obtener stock de una talla específica)
  */
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, url }) => {
   try {
     const { id } = params;
+    const size = url.searchParams.get('size');
 
     if (!id) {
       return new Response(
@@ -25,7 +27,7 @@ export const GET: APIRoute = async ({ params }) => {
 
     const { data: product, error } = await supabase
       .from('products')
-      .select('id, name, stock, price_cents, is_active')
+      .select('id, name, price_cents, is_active')
       .eq('id', id)
       .single();
 
@@ -37,12 +39,42 @@ export const GET: APIRoute = async ({ params }) => {
       );
     }
 
+    // Obtener stock por tallas desde product_sizes
+    let sizeStocks: { size: string; stock: number }[] = [];
+    let totalStock = 0;
+
+    if (size) {
+      // Si se pide una talla específica
+      const { data: sizeData } = await supabase
+        .from('product_sizes')
+        .select('size, stock')
+        .eq('product_id', id)
+        .eq('size', size)
+        .single();
+
+      if (sizeData) {
+        sizeStocks = [sizeData];
+        totalStock = sizeData.stock;
+      }
+    } else {
+      // Devolver todas las tallas
+      const { data: sizesData } = await supabase
+        .from('product_sizes')
+        .select('size, stock')
+        .eq('product_id', id)
+        .order('size');
+
+      sizeStocks = sizesData || [];
+      totalStock = sizeStocks.reduce((sum, s) => sum + s.stock, 0);
+    }
+
     return new Response(
       JSON.stringify({
         product: {
           id: product.id,
           name: product.name,
-          stock: product.stock,
+          stock: totalStock,
+          sizeStocks,
           price_cents: product.price_cents,
           is_active: product.is_active,
         },

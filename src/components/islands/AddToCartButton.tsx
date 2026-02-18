@@ -27,6 +27,26 @@ export default function AddToCartButton({
   const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState(initialSelectedSize || '');
+  const [sizeStock, setSizeStock] = useState(stock);
+
+  // Obtener stock de la talla seleccionada
+  useEffect(() => {
+    if (!selectedSize) return;
+    
+    const fetchSizeStock = async () => {
+      try {
+        const response = await fetch(`/api/products/${productId}?size=${encodeURIComponent(selectedSize)}`);
+        const data = await response.json();
+        if (data.product && data.product.stock !== undefined) {
+          setSizeStock(data.product.stock);
+        }
+      } catch (error) {
+        console.error('Error obteniendo stock por talla:', error);
+      }
+    };
+
+    fetchSizeStock();
+  }, [selectedSize, productId]);
 
   // Sincronizar con el select HTML cuando cambia
   useEffect(() => {
@@ -58,12 +78,12 @@ export default function AddToCartButton({
       selectedSize,
       currentSize,
       sizeSelect: sizeSelect?.value,
-      stock
+      sizeStock
     });
     
     // Validaciones
-    if (stock === 0) {
-      console.error('❌ Sin stock');
+    if (sizeStock === 0) {
+      console.error('❌ Sin stock para esta talla');
       setFeedback('error');
       return;
     }
@@ -77,14 +97,15 @@ export default function AddToCartButton({
     setIsAdding(true);
 
     try {
-      // 1️⃣ Reservar stock en la BD
-      console.log('📦 Reservando stock...', { productId, quantity });
+      // 1️⃣ Reservar stock en la BD (ahora con talla)
+      console.log('📦 Reservando stock...', { productId, quantity, size: currentSize });
       const reserveResponse = await fetch('/api/cart/reserve-stock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productId,
           quantity,
+          size: currentSize,
         }),
       });
 
@@ -131,10 +152,10 @@ export default function AddToCartButton({
   };
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setQuantity(Math.max(1, Math.min(parseInt(e.target.value), stock)));
+    setQuantity(Math.max(1, Math.min(parseInt(e.target.value), sizeStock)));
   };
 
-  const isDisabled = stock === 0 || !selectedSize || isAdding;
+  const isDisabled = sizeStock === 0 || !selectedSize || isAdding;
 
   return (
     <div className="space-y-3">
@@ -151,7 +172,7 @@ export default function AddToCartButton({
             disabled={isDisabled}
             className="px-3 py-2 border border-primary-300 rounded-sm text-sm font-sans focus:outline-none focus:border-primary-800 disabled:bg-neutral-gray_light disabled:cursor-not-allowed"
           >
-            {Array.from({ length: Math.min(stock, 10) }, (_, i) => i + 1).map(
+            {Array.from({ length: Math.min(sizeStock, 10) }, (_, i) => i + 1).map(
               (q) => (
                 <option key={q} value={q}>
                   {q}
@@ -185,7 +206,7 @@ export default function AddToCartButton({
           '✓ Añadido al carrito'
         ) : feedback === 'error' ? (
           '✗ Error'
-        ) : stock === 0 ? (
+        ) : sizeStock === 0 ? (
           'Agotado'
         ) : !selectedSize ? (
           'Selecciona una talla'
@@ -195,9 +216,9 @@ export default function AddToCartButton({
       </button>
 
       {/* Mensaje informativo */}
-      {stock > 0 && stock <= 5 && (
+      {sizeStock > 0 && sizeStock <= 5 && selectedSize && (
         <p className="text-xs text-amber-600 font-sans text-center">
-          ⚠ Solo quedan {stock} unidades
+          ⚠ Solo quedan {sizeStock} unidades de la talla {selectedSize}
         </p>
       )}
     </div>

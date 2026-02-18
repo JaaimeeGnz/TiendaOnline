@@ -1,72 +1,94 @@
 import { useEffect, useState } from 'react';
 
+interface SizeStock {
+  size: string;
+  stock: number;
+}
+
 interface StockDisplayProps {
   productId: string;
   initialStock: number;
+  selectedSize?: string;
 }
 
-export default function StockDisplay({ productId, initialStock }: StockDisplayProps) {
+export default function StockDisplay({ productId, initialStock, selectedSize }: StockDisplayProps) {
   const [stock, setStock] = useState(initialStock);
-  const [loading, setLoading] = useState(false);
+  const [sizeStocks, setSizeStocks] = useState<SizeStock[]>([]);
+  const [currentSize, setCurrentSize] = useState(selectedSize || '');
 
-  // Recargar stock cada 5 segundos, pero solo si la pestaña está activa
+  // Escuchar cambios del select de talla
+  useEffect(() => {
+    const sizeSelect = document.getElementById('size') as HTMLSelectElement;
+    if (sizeSelect) {
+      const handleSizeChange = () => {
+        setCurrentSize(sizeSelect.value);
+      };
+      sizeSelect.addEventListener('change', handleSizeChange);
+      if (sizeSelect.value) {
+        setCurrentSize(sizeSelect.value);
+      }
+      return () => {
+        sizeSelect.removeEventListener('change', handleSizeChange);
+      };
+    }
+  }, []);
+
+  // Recargar stock cada 5 segundos
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    let lastStock = initialStock;
+    let lastSizeStocks: string = '';
 
     const updateStock = async () => {
-      // Solo hacer fetch si la página está visible
       if (!document.hidden) {
         try {
-          setLoading(true);
-          const response = await fetch(`/api/products/${productId}`);
+          const url = currentSize
+            ? `/api/products/${productId}?size=${encodeURIComponent(currentSize)}`
+            : `/api/products/${productId}`;
+          const response = await fetch(url);
           const data = await response.json();
           
-          if (data.product && data.product.stock !== undefined) {
-            // Solo actualizar el estado si el stock cambió
-            if (data.product.stock !== lastStock) {
-              console.log('📊 Stock actualizado:', lastStock, '->', data.product.stock);
+          if (data.product) {
+            const newSizeStocksStr = JSON.stringify(data.product.sizeStocks);
+            if (newSizeStocksStr !== lastSizeStocks) {
+              setSizeStocks(data.product.sizeStocks || []);
               setStock(data.product.stock);
-              lastStock = data.product.stock;
+              lastSizeStocks = newSizeStocksStr;
             }
           }
         } catch (error) {
           console.error('Error actualizando stock:', error);
-        } finally {
-          setLoading(false);
         }
       }
     };
 
-    // Hacer primer update inmediatamente
     updateStock();
-
-    // Luego hacer polling cada 5 segundos
     interval = setInterval(updateStock, 5000);
 
-    // Escuchar cambios de visibilidad de la página
-    const handleVisibilityChange = () => {
-      console.log('👀 Página visible:', !document.hidden);
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => clearInterval(interval);
+  }, [productId, currentSize]);
 
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [productId, initialStock]);
+  // Obtener stock de la talla seleccionada
+  const currentSizeStock = currentSize
+    ? sizeStocks.find(s => s.size === currentSize)?.stock ?? stock
+    : stock;
 
   return (
     <div
       className={`p-4 rounded-sm text-sm font-semibold transition ${
-        stock > 0
+        currentSizeStock > 0
           ? 'bg-green-50 text-green-700'
           : 'bg-red-50 text-red-700'
       }`}
     >
-      {stock > 0
-        ? `${stock} unidades en stock`
-        : 'Agotado'}
+      {currentSize ? (
+        currentSizeStock > 0
+          ? `${currentSizeStock} unidades en stock (talla ${currentSize})`
+          : `Agotado (talla ${currentSize})`
+      ) : (
+        currentSizeStock > 0
+          ? `${currentSizeStock} unidades en stock (total)`
+          : 'Agotado'
+      )}
     </div>
   );
 }

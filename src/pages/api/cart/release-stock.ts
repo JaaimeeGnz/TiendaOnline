@@ -10,36 +10,37 @@ const supabase = createClient(
 
 /**
  * POST /api/cart/release-stock
- * Devuelve el stock cuando se elimina un producto del carrito
+ * Devuelve el stock de una talla cuando se elimina un producto del carrito
  * 
  * Body:
  * {
  *   "productId": "uuid",
- *   "quantity": number
+ *   "quantity": number,
+ *   "size": string
  * }
  */
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { productId, quantity } = await request.json();
+    const { productId, quantity, size } = await request.json();
 
     // Validaciones
-    if (!productId || !quantity || quantity <= 0) {
+    if (!productId || !quantity || quantity <= 0 || !size) {
       return new Response(
         JSON.stringify({
-          error: 'productId y quantity son requeridos',
+          error: 'productId, quantity y size son requeridos',
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Obtener producto actual
-    const { data: product, error: fetchError } = await supabase
+    // Obtener nombre del producto
+    const { data: product, error: productError } = await supabase
       .from('products')
-      .select('id, name, stock')
+      .select('id, name')
       .eq('id', productId)
       .single();
 
-    if (fetchError || !product) {
+    if (productError || !product) {
       console.error('❌ Producto no encontrado:', productId);
       return new Response(
         JSON.stringify({ error: 'Producto no encontrado' }),
@@ -47,13 +48,28 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Devolver stock
-    const newStock = product.stock + quantity;
-    const { data: updated, error: updateError } = await supabase
-      .from('products')
-      .update({ stock: newStock })
-      .eq('id', productId)
-      .select();
+    // Obtener stock actual de la talla desde product_sizes
+    const { data: sizeData, error: fetchError } = await supabase
+      .from('product_sizes')
+      .select('id, stock')
+      .eq('product_id', productId)
+      .eq('size', size)
+      .single();
+
+    if (fetchError || !sizeData) {
+      console.error('❌ Talla no encontrada:', { productId, size });
+      return new Response(
+        JSON.stringify({ error: `Talla ${size} no encontrada para este producto` }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Devolver stock a la talla
+    const newStock = sizeData.stock + quantity;
+    const { error: updateError } = await supabase
+      .from('product_sizes')
+      .update({ stock: newStock, updated_at: new Date().toISOString() })
+      .eq('id', sizeData.id);
 
     if (updateError) {
       console.error('❌ Error al devolver stock:', updateError);
@@ -63,10 +79,11 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log(`✅ Stock devuelto para ${product.name}:`, {
+    console.log(`✅ Stock devuelto para ${product.name} talla ${size}:`, {
       productId,
+      size,
       cantidad: quantity,
-      stockAnterior: product.stock,
+      stockAnterior: sizeData.stock,
       stockNuevo: newStock,
     });
 
@@ -77,6 +94,7 @@ export const POST: APIRoute = async ({ request }) => {
         product: {
           id: productId,
           name: product.name,
+          size,
           stockReleased: quantity,
           stockRemaining: newStock,
         },

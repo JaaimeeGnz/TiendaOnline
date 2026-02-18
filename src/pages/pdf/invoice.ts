@@ -516,7 +516,7 @@ async function handleInvoiceRequest(context: any) {
         .insert({
           invoice_number: invoiceNumber,
           order_id: order.id,
-          customer_email: order.customer_email || 'no-email@example.com',
+          customer_email: customerEmail,
           customer_name: customerName,
           type: 'invoice',
           subtotal_cents: subtotalCents,
