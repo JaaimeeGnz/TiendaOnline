@@ -7,6 +7,7 @@
 import PublicLayout from "../layouts/PublicLayout.astro";
 import ProductCard from "../components/product/ProductCard.astro";
 import NewsletterPopup from "../components/ui/NewsletterPopup.tsx";
+import PromoBanner from "../components/islands/PromoBanner.tsx";
 import { supabaseClient } from "../lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 
@@ -55,17 +56,8 @@ const onSale = saleProducts || [];
 ---
 
 <PublicLayout title="JGMarket - Zapatillas y Ropa Deportiva">
-  <!-- Hero Banner -->
-  <section
-    class="relative bg-gradient-to-r from-jd-red to-red-700 text-white overflow-hidden"
-  >
-    <div class="absolute inset-0 opacity-20 pointer-events-none">
-      <div
-        class="absolute top-0 right-0 w-96 h-96 bg-black rounded-full mix-blend-multiply blur-3xl transform translate-x-1/2 -translate-y-1/2"
-      >
-      </div>
-    </div>
-  </section>
+  <!-- Promo Banner Carousel -->
+  <PromoBanner client:load />
 
   <!-- Categories Grid -->
   <section class="max-w-7xl mx-auto px-4 py-12">

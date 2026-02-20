@@ -34,6 +34,8 @@ export interface Refund {
   returned_items: any[];
   refund_method: 'original_payment' | 'store_credit';
   requested_at: string;
+  processed_at?: string;
+  refund_date?: string;
   credit_note_id?: string;
 }
 
@@ -326,6 +328,7 @@ export async function markRefundAsProcessed(refundId: string, refundDate?: strin
 
 /**
  * Obtiene el resumen financiero de facturas y abonos
+ * totalAllOrders = suma de TODOS los pedidos (no solo facturas descargadas)
  */
 export async function getFinancialSummary(
   startDate?: string,
@@ -336,8 +339,11 @@ export async function getFinancialSummary(
   netAmount: number;
   invoiceCount: number;
   creditNoteCount: number;
+  totalAllOrders: number;
+  orderCount: number;
 }> {
   try {
+    // 1) Facturas descargadas
     let query = supabase.from('invoices').select('total_cents, type');
     
     if (startDate) {
@@ -351,7 +357,7 @@ export async function getFinancialSummary(
 
     if (error) {
       console.error('Error fetching financial summary:', error);
-      return { totalInvoices: 0, totalCreditNotes: 0, netAmount: 0, invoiceCount: 0, creditNoteCount: 0 };
+      return { totalInvoices: 0, totalCreditNotes: 0, netAmount: 0, invoiceCount: 0, creditNoteCount: 0, totalAllOrders: 0, orderCount: 0 };
     }
 
     let totalInvoices = 0;
@@ -371,15 +377,44 @@ export async function getFinancialSummary(
 
     const netAmount = totalInvoices + totalCreditNotes; // totalCreditNotes es negativo
 
+    // 2) Total de TODOS los pedidos (no cancelados) — el verdadero "Total Facturado"
+    let ordersQuery = supabase
+      .from('orders')
+      .select('total_cents')
+      .neq('status', 'cancelled');
+
+    if (startDate) {
+      ordersQuery = ordersQuery.gte('created_at', startDate);
+    }
+    if (endDate) {
+      ordersQuery = ordersQuery.lte('created_at', endDate);
+    }
+
+    const { data: ordersData, error: ordersError } = await ordersQuery;
+
+    let totalAllOrders = 0;
+    let orderCount = 0;
+
+    if (!ordersError && ordersData) {
+      ordersData.forEach((order: any) => {
+        totalAllOrders += order.total_cents || 0;
+        orderCount++;
+      });
+    } else if (ordersError) {
+      console.error('Error fetching orders for summary:', ordersError);
+    }
+
     return {
       totalInvoices: totalInvoices / 100,
       totalCreditNotes: Math.abs(totalCreditNotes) / 100,
       netAmount: netAmount / 100,
       invoiceCount,
       creditNoteCount,
+      totalAllOrders: totalAllOrders / 100,
+      orderCount,
     };
   } catch (error) {
     console.error('Error in getFinancialSummary:', error);
-    return { totalInvoices: 0, totalCreditNotes: 0, netAmount: 0, invoiceCount: 0, creditNoteCount: 0 };
+    return { totalInvoices: 0, totalCreditNotes: 0, netAmount: 0, invoiceCount: 0, creditNoteCount: 0, totalAllOrders: 0, orderCount: 0 };
   }
 }

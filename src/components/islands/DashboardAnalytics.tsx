@@ -90,7 +90,7 @@ export default function DashboardAnalytics() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-bold text-gray-600 uppercase">Reportes</p>
-              <p className="text-4xl font-black text-purple-600 mt-3 group-hover:scale-105 transition">📋</p>
+              <p className="text-4xl font-black text-purple-600 mt-3 group-hover:scale-105 transition"></p>
               <p className="text-xs text-gray-500 mt-2">Mensajes de clientes</p>
             </div>
             <div className="w-12 h-12 bg-purple-500 bg-opacity-10 rounded-lg flex items-center justify-center group-hover:bg-purple-500 group-hover:bg-opacity-20 transition">

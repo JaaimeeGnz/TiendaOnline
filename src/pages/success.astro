@@ -116,6 +116,10 @@ const sessionId = Astro.url.searchParams.get('session_id');
 
         function clearCart() {
             localStorage.removeItem(CART_KEY);
+            // También guardar estado vacío para que nanostores lo recoja
+            localStorage.setItem(CART_KEY, JSON.stringify({ items: [], lastUpdated: Date.now() }));
+            // Disparar evento para sincronizar el badge del carrito en la UI
+            window.dispatchEvent(new CustomEvent('cart-updated', { detail: { items: [], lastUpdated: Date.now() } }));
             console.log('Carrito vaciado');
         }
 
@@ -181,9 +185,31 @@ const sessionId = Astro.url.searchParams.get('session_id');
         }
 
         // Inicializar
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             renderOrderDetails();
             clearCart();
+            
+            // Guardar dirección de envío de Stripe
+            if (SESSION_ID) {
+                try {
+                    console.log('📦 Guardando dirección de Stripe...');
+                    const response = await fetch('/api/stripe/handle-shipping', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionId: SESSION_ID })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        console.log('✅ Dirección guardada:', result);
+                    } else {
+                        console.warn('⚠️ Error guardando dirección:', result.error);
+                    }
+                } catch (error) {
+                    console.error('❌ Error en handle-shipping:', error);
+                }
+            }
             
             // Event listener para descargar factura
             const downloadBtn = document.getElementById('download-invoice-btn');

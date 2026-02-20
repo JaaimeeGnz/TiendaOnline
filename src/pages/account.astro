@@ -13,6 +13,7 @@ import {
   SettingsPanel,
 } from "../components/islands/AccountModals";
 import UserOrders from "../components/islands/UserOrders";
+import UserRefunds from "../components/islands/UserRefunds";
 ---
 
 <PublicLayout title="Mi Cuenta - JGMarket">
@@ -52,6 +53,20 @@ import UserOrders from "../components/islands/UserOrders";
             data-section="orders"
           >
             Mis Pedidos
+          </a>
+          <a
+            href="#refunds"
+            class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition nav-link"
+            data-section="refunds"
+          >
+            Devoluciones
+          </a>
+          <a
+            href="#policies"
+            class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition nav-link"
+            data-section="policies"
+          >
+            Políticas
           </a>
         </nav>
       </div>
@@ -144,6 +159,116 @@ import UserOrders from "../components/islands/UserOrders";
           </p>
 
           <UserOrders client:only="react" />
+        </section>
+
+        <!-- Refunds Section -->
+        <section
+          id="refunds"
+          class="section bg-white rounded-lg shadow-sm p-8 mb-6 hidden"
+        >
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Devoluciones</h2>
+          <p class="text-gray-600 mb-6">
+            Aquí aparecerán las devoluciones que hayas solicitado
+          </p>
+
+          <UserRefunds client:only="react" />
+        </section>
+
+        <!-- Policies Section -->
+        <section
+          id="policies"
+          class="section bg-white rounded-lg shadow-sm p-8 mb-6 hidden"
+        >
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Términos y Políticas</h2>
+
+          <div class="space-y-8">
+            <!-- Privacy Policy -->
+            <div class="border-b-2 border-gray-200 pb-8">
+              <h3 class="text-xl font-bold text-gray-900 mb-4">Política de Privacidad</h3>
+              <div class="text-gray-600 space-y-4">
+                <p>
+                  En <strong>JGMarket</strong>, respetamos tu privacidad y nos comprometemos a proteger tus datos personales. Utilizamos tus datos únicamente para:
+                </p>
+                <ul class="list-disc list-inside space-y-2 pl-2">
+                  <li>Procesar y enviar tus pedidos</li>
+                  <li>Comunicarnos sobre el estado de tu compra</li>
+                  <li>Mejorar nuestros servicios</li>
+                  <li>Enviar información sobre productos de tu interés (si lo autorizas)</li>
+                </ul>
+                <p>
+                  Tus datos nunca serán compartidos con terceros sin tu consentimiento explícito.
+                </p>
+              </div>
+            </div>
+
+            <!-- Terms of Service -->
+            <div class="border-b-2 border-gray-200 pb-8">
+              <h3 class="text-xl font-bold text-gray-900 mb-4">Términos de Servicio</h3>
+              <div class="text-gray-600 space-y-4">
+                <p>
+                  Al utilizar JGMarket, aceptas nuestros términos y condiciones:
+                </p>
+                <ul class="list-disc list-inside space-y-2 pl-2">
+                  <li>Eres responsable de mantener tu contraseña segura</li>
+                  <li>No reproducirás ni distribuirás nuestro contenido sin autorización</li>
+                  <li>Los precios pueden cambiar sin previo aviso</li>
+                  <li>JGMarket se reserva el derecho de rechazar pedidos</li>
+                  <li>Aceptas usar la plataforma solo para fines legales</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Return & Refund Policy -->
+            <div class="border-b-2 border-gray-200 pb-8">
+              <h3 class="text-xl font-bold text-gray-900 mb-4">Política de Devoluciones y Reembolsos</h3>
+              <div class="text-gray-600 space-y-4">
+                <p>
+                  Ofrecemos un proceso simple para devoluciones:
+                </p>
+                <ul class="list-disc list-inside space-y-2 pl-2">
+                  <li><strong>Plazo:</strong> 30 días desde la recepción del producto</li>
+                  <li><strong>Condición:</strong> El producto debe estar sin usar y en estado original</li>
+                  <li><strong>Proceso:</strong> Solicita una devolución en tu cuenta (sección "Devoluciones")</li>
+                  <li><strong>Reembolso:</strong> Se procesará en 5-10 días hábiles tras recibir el producto</li>
+                  <li><strong>Envío:</strong> Los gastos de devolución corren a cuenta del cliente, a menos que sea un defecto nuestro</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Shipping Policy -->
+            <div class="border-b-2 border-gray-200 pb-8">
+              <h3 class="text-xl font-bold text-gray-900 mb-4">Política de Envío</h3>
+              <div class="text-gray-600 space-y-4">
+                <p>
+                  Información sobre nuestros envíos:
+                </p>
+                <ul class="list-disc list-inside space-y-2 pl-2">
+                  <li><strong>Preparación:</strong> Los pedidos se preparan en 1-2 días hábiles</li>
+                  <li><strong>Envío:</strong> Utilizamos servicios de envío rápidos y seguros</li>
+                  <li><strong>Seguimiento:</strong> Recibirás un código de seguimiento por correo</li>
+                  <li><strong>Entrega:</strong> El tiempo de entrega depende de tu ubicación (3-5 días hábiles típicamente)</li>
+                  <li><strong>Gastos:</strong> Los costos de envío aparecen en el carrito antes de confirmar el pedido</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Payment Policy -->
+            <div class="pb-8">
+              <h3 class="text-xl font-bold text-gray-900 mb-4">Política de Pagos</h3>
+              <div class="text-gray-600 space-y-4">
+                <p>
+                  Seguridad en los pagos:
+                </p>
+                <ul class="list-disc list-inside space-y-2 pl-2">
+                  <li>Utilizamos <strong>Stripe</strong> para procesar pagos de forma segura</li>
+                  <li>Aceptamos tarjetas de crédito y débito (Visa, Mastercard, etc.)</li>
+                  <li>Tus datos bancarios nunca se almacenan en nuestros servidores</li>
+                  <li>Estamos encriptados con <strong>SSL (https)</strong> para tu protección</li>
+                  <li>El importe se cargará en tu cuenta una vez confirmado el pedido</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </section>
 
 

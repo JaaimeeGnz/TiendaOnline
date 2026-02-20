@@ -23,6 +23,7 @@ export default function MyOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -127,6 +128,45 @@ export default function MyOrders() {
       setExpandedOrder(null);
     } else {
       setExpandedOrder(orderId);
+    }
+  };
+
+  const cancelOrder = async (orderId: string) => {
+    if (!confirm('¿Estás seguro de que quieres cancelar este pedido? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    setCancellingOrderId(orderId);
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const userEmail = session?.user?.email || localStorage.getItem('userEmail') || '';
+      const userId = session?.user?.id || '';
+
+      const response = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-customer-email': userEmail,
+          'x-user-id': userId,
+        },
+        body: JSON.stringify({ orderId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || 'Error al cancelar el pedido');
+        return;
+      }
+
+      // Eliminar el pedido de la lista local
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+      setExpandedOrder(null);
+    } catch (err) {
+      console.error('Error cancelando pedido:', err);
+      alert('Ocurrió un error al cancelar el pedido');
+    } finally {
+      setCancellingOrderId(null);
     }
   };
 
@@ -264,6 +304,29 @@ export default function MyOrders() {
                 </svg>
                 Descargar Factura
               </button>
+
+              {/* Botón Cancelar Pedido - solo visible si está pendiente */}
+              {['pending', 'pendiente'].includes(order.status.toLowerCase().trim()) && (
+                <button
+                  onClick={() => cancelOrder(order.id)}
+                  disabled={cancellingOrderId === order.id}
+                  className="flex-1 border border-red-300 text-red-600 py-2 px-4 rounded-lg font-semibold hover:bg-red-50 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {cancellingOrderId === order.id ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                      Cancelando...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Cancelar Pedido
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
             {/* Detalles expandibles */}

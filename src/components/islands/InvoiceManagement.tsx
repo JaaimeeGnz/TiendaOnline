@@ -1,13 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import {
   getAllInvoices,
-  getPendingRefunds,
   getFinancialSummary,
-  processRefund,
-  markRefundAsProcessed,
   type Invoice,
   type Refund,
 } from '../../lib/invoiceAndRefunds';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+
+// Mapa de motivos en español
+const REASON_MAP: Record<string, string> = {
+  defective: 'Producto defectuoso o dañado',
+  wrong_size: 'Talla incorrecta',
+  not_as_described: 'No coincide con la descripción',
+  wrong_product: 'Recibí un producto equivocado',
+  not_satisfied: 'No estoy satisfecho con la calidad',
+  other: 'Otro motivo',
+};
+
+function translateReason(reason: string): string {
+  return REASON_MAP[reason] || reason;
+}
 
 export default function InvoiceManagement() {
   const [activeTab, setActiveTab] = useState<'invoices' | 'refunds' | 'summary'>('summary');
@@ -24,14 +41,27 @@ export default function InvoiceManagement() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [invoicesData, refundsData, summaryData] = await Promise.all([
+      const [invoicesData, summaryData] = await Promise.all([
         getAllInvoices(),
-        getPendingRefunds(),
         getFinancialSummary(),
       ]);
 
+      // Cargar todas las devoluciones (no solo pendientes)
+      let refundsData: Refund[] = [];
+      try {
+        const { data, error } = await supabase
+          .from('refunds')
+          .select('*')
+          .order('requested_at', { ascending: false });
+        if (!error && data) {
+          refundsData = data as Refund[];
+        }
+      } catch (e) {
+        console.warn('Tabla refunds no disponible aún');
+      }
+
       setInvoices(invoicesData || []);
-      setRefunds(refundsData || []);
+      setRefunds(refundsData);
       setSummary(summaryData);
       setError(null);
     } catch (err) {
@@ -39,52 +69,6 @@ export default function InvoiceManagement() {
       setError('Error al cargar datos de facturas');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleApproveRefund = async (refundId: string) => {
-    if (!confirm('¿Aprobar esta devolución?')) return;
-
-    try {
-      const result = await processRefund(refundId, true);
-      if (result.success) {
-        alert('Devolución aprobada. Factura de abono creada.');
-        loadData();
-      } else {
-        alert('Error: ' + result.message);
-      }
-    } catch (err) {
-      alert('Error al procesar la devolución');
-    }
-  };
-
-  const handleRejectRefund = async (refundId: string) => {
-    if (!confirm('¿Rechazar esta devolución?')) return;
-
-    try {
-      const result = await processRefund(refundId, false);
-      if (result.success) {
-        alert('Devolución rechazada');
-        loadData();
-      } else {
-        alert('Error: ' + result.message);
-      }
-    } catch (err) {
-      alert('Error al rechazar la devolución');
-    }
-  };
-
-  const handleProcessRefund = async (refundId: string) => {
-    try {
-      const success = await markRefundAsProcessed(refundId);
-      if (success) {
-        alert('Devolución marcada como procesada');
-        loadData();
-      } else {
-        alert('Error al procesar la devolución');
-      }
-    } catch (err) {
-      alert('Error');
     }
   };
 
@@ -222,6 +206,124 @@ export default function InvoiceManagement() {
     }
   };
 
+  // Generar y descargar factura de devolución/abono
+  const downloadRefundInvoice = (refund: Refund) => {
+    const items = Array.isArray(refund.returned_items) ? refund.returned_items : [];
+    const refundDate = refund.processed_at || refund.requested_at;
+
+    const refundHtml = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Factura de Abono - Devolución</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; padding: 40px; max-width: 800px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 3px solid #ea580c; padding-bottom: 20px; }
+    .logo { font-size: 28px; font-weight: 900; }
+    .logo span { color: #e41e31; }
+    .invoice-info { text-align: right; }
+    .invoice-info h2 { font-size: 24px; color: #ea580c; margin-bottom: 8px; }
+    .invoice-info p { font-size: 13px; color: #666; }
+    .section { margin-bottom: 30px; }
+    .section-title { font-size: 14px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .client-info p { font-size: 14px; line-height: 1.6; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    thead th { background: #ea580c; color: white; padding: 12px 16px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    thead th:last-child { text-align: right; }
+    tbody td { padding: 12px 16px; border-bottom: 1px solid #eee; font-size: 14px; }
+    tbody td:last-child { text-align: right; font-weight: 600; }
+    .totals { margin-top: 20px; display: flex; justify-content: flex-end; }
+    .totals-table { width: 280px; }
+    .totals-table tr td { padding: 8px 0; font-size: 14px; }
+    .totals-table tr td:last-child { text-align: right; font-weight: 600; }
+    .totals-table .total-row td { font-size: 18px; font-weight: 900; border-top: 2px solid #ea580c; padding-top: 12px; color: #ea580c; }
+    .reason-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 16px; margin-bottom: 30px; }
+    .reason-box p { font-size: 14px; color: #9a3412; }
+    .footer { margin-top: 60px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: #d4edda; color: #155724; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">JG<span>MARKET</span></div>
+    <div class="invoice-info">
+      <h2>FACTURA DE ABONO</h2>
+      <p><strong>Devolución</strong></p>
+      <p>Fecha: ${new Date(refundDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+      <p><span class="badge">PROCESADA</span></p>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Cliente</p>
+    <div class="client-info">
+      <p><strong>${refund.customer_name}</strong></p>
+      <p>${refund.customer_email}</p>
+    </div>
+  </div>
+
+  <div class="reason-box">
+    <p><strong>Motivo de devolución:</strong> ${translateReason(refund.reason)}</p>
+  </div>
+
+  <div class="section">
+    <p class="section-title">Productos Devueltos</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Talla</th>
+          <th>Cantidad</th>
+          <th>Precio unit.</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map((item: any) => `
+          <tr>
+            <td>${item.product_name || 'Producto'}</td>
+            <td>${item.size || '-'}</td>
+            <td>${item.quantity || 1}</td>
+            <td>${((item.price_cents || 0) / 100).toFixed(2)}€</td>
+            <td>${(((item.price_cents || 0) * (item.quantity || 1)) / 100).toFixed(2)}€</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="totals">
+    <table class="totals-table">
+      <tr class="total-row">
+        <td>TOTAL REEMBOLSADO</td>
+        <td>${(refund.refund_amount_cents / 100).toFixed(2)}€</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section" style="margin-top: 30px;">
+    <p style="font-size: 13px; color: #666;">Método de reembolso: ${refund.refund_method === 'original_payment' ? 'Método de pago original' : 'Crédito en tienda'}</p>
+    <p style="font-size: 13px; color: #666;">El reembolso se procesará en 5-7 días hábiles.</p>
+  </div>
+
+  <div class="footer">
+    <p>JGMarket — Factura de abono generada automáticamente</p>
+    <p>Gracias por tu confianza</p>
+  </div>
+</body>
+</html>`;
+
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      newWindow.document.write(refundHtml);
+      newWindow.document.close();
+      setTimeout(() => newWindow.print(), 500);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Tabs */}
@@ -245,29 +347,37 @@ export default function InvoiceManagement() {
 
       {/* Summary Tab */}
       {activeTab === 'summary' && summary && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-white border-2 border-jd-turquoise rounded-lg p-6">
             <p className="text-sm font-bold text-gray-600 uppercase">Total Facturado</p>
             <p className="text-3xl font-black text-jd-turquoise mt-3">
-              {summary.totalInvoices.toFixed(2)}€
+              {(summary.totalAllOrders ?? summary.totalInvoices).toFixed(2)}€
             </p>
-            <p className="text-xs text-gray-500 mt-2">{summary.invoiceCount} facturas</p>
+            <p className="text-xs text-gray-500 mt-2">{summary.orderCount ?? summary.invoiceCount} pedidos</p>
           </div>
 
           <div className="bg-white border-2 border-jd-black rounded-lg p-6">
             <p className="text-sm font-bold text-gray-600 uppercase">Neto</p>
             <p className="text-3xl font-black text-jd-black mt-3">
-              {summary.netAmount.toFixed(2)}€
+              {((summary.totalAllOrders ?? summary.totalInvoices) - (refunds.reduce((sum: number, r: Refund) => sum + (r.refund_amount_cents || 0), 0) / 100)).toFixed(2)}€
             </p>
-            <p className="text-xs text-gray-500 mt-2">Total neto</p>
+            <p className="text-xs text-gray-500 mt-2">Total - devoluciones</p>
           </div>
 
           <div className="bg-white border-2 border-orange-400 rounded-lg p-6">
-            <p className="text-sm font-bold text-gray-600 uppercase">Devoluciones Pendientes</p>
+            <p className="text-sm font-bold text-gray-600 uppercase">Devoluciones</p>
             <p className="text-3xl font-black text-orange-600 mt-3">
-              {refunds.filter(r => r.status === 'pending').length}
+              {refunds.length}
             </p>
-            <p className="text-xs text-gray-500 mt-2">Require atención</p>
+            <p className="text-xs text-gray-500 mt-2">Total realizadas</p>
+          </div>
+
+          <div className="bg-white border-2 border-red-400 rounded-lg p-6">
+            <p className="text-sm font-bold text-gray-600 uppercase">Dinero Devuelto</p>
+            <p className="text-3xl font-black text-red-600 mt-3">
+              {(refunds.reduce((sum, r) => sum + (r.refund_amount_cents || 0), 0) / 100).toFixed(2)}€
+            </p>
+            <p className="text-xs text-gray-500 mt-2">Por devoluciones</p>
           </div>
         </div>
       )}
@@ -351,71 +461,71 @@ export default function InvoiceManagement() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Cliente</th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Motivo</th>
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Productos</th>
                   <th className="px-6 py-3 text-right text-xs font-bold text-gray-700">Monto</th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Estado</th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Fecha</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Acciones</th>
+                  <th className="px-6 py-3 text-center text-xs font-bold text-gray-700">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {refunds.length > 0 ? (
-                  refunds.map((refund) => (
-                    <tr key={refund.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-6 py-3 font-bold text-jd-black">{refund.customer_name}</td>
-                      <td className="px-6 py-3 text-sm text-gray-700">{refund.reason}</td>
-                      <td className="px-6 py-3 text-right font-bold text-jd-red">
-                        {(refund.refund_amount_cents / 100).toFixed(2)}€
-                      </td>
-                      <td className="px-6 py-3 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          refund.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : refund.status === 'approved'
-                            ? 'bg-blue-100 text-blue-700'
-                            : refund.status === 'processed'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {refund.status === 'pending' && 'Pendiente'}
-                          {refund.status === 'approved' && 'Aprobada'}
-                          {refund.status === 'processed' && 'Procesada'}
-                          {refund.status === 'rejected' && 'Rechazada'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-sm text-gray-600">
-                        {new Date(refund.requested_at).toLocaleDateString('es-ES')}
-                      </td>
-                      <td className="px-6 py-3 text-sm space-x-2">
-                        {refund.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleApproveRefund(refund.id)}
-                              className="px-3 py-1 bg-green-500 text-white rounded font-bold text-xs hover:bg-green-600"
-                            >
-                              Aprobar
-                            </button>
-                            <button
-                              onClick={() => handleRejectRefund(refund.id)}
-                              className="px-3 py-1 bg-red-500 text-white rounded font-bold text-xs hover:bg-red-600"
-                            >
-                              Rechazar
-                            </button>
-                          </>
-                        )}
-                        {refund.status === 'approved' && (
+                  refunds.map((refund) => {
+                    const returnedItems = Array.isArray(refund.returned_items) ? refund.returned_items : [];
+                    return (
+                      <tr key={refund.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="px-6 py-3">
+                          <p className="font-bold text-jd-black text-sm">{refund.customer_name}</p>
+                          <p className="text-xs text-gray-500">{refund.customer_email}</p>
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-700 max-w-[200px]">{translateReason(refund.reason)}</td>
+                        <td className="px-6 py-3 text-sm text-gray-600">
+                          {returnedItems.map((item: any, idx: number) => (
+                            <div key={idx} className="text-xs">
+                              {item.quantity}x {item.product_name}{item.size ? ` (${item.size})` : ''}
+                            </div>
+                          ))}
+                        </td>
+                        <td className="px-6 py-3 text-right font-bold text-red-600">
+                          {(refund.refund_amount_cents / 100).toFixed(2)}€
+                        </td>
+                        <td className="px-6 py-3 text-sm">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            refund.status === 'processed'
+                              ? 'bg-green-100 text-green-700'
+                              : refund.status === 'approved'
+                              ? 'bg-blue-100 text-blue-700'
+                              : refund.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {refund.status === 'processed' && 'Procesada'}
+                            {refund.status === 'approved' && 'Aprobada'}
+                            {refund.status === 'pending' && 'Pendiente'}
+                            {refund.status === 'rejected' && 'Rechazada'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-sm text-gray-600">
+                          {new Date(refund.requested_at).toLocaleDateString('es-ES')}
+                        </td>
+                        <td className="px-6 py-3 text-center">
                           <button
-                            onClick={() => handleProcessRefund(refund.id)}
-                            className="px-3 py-1 bg-blue-500 text-white rounded font-bold text-xs hover:bg-blue-600"
+                            onClick={() => downloadRefundInvoice(refund)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white rounded font-bold text-xs hover:bg-orange-700 transition"
+                            title="Descargar factura de devolución"
                           >
-                            Procesar
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Factura
                           </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                       No hay devoluciones registradas
                     </td>
                   </tr>
