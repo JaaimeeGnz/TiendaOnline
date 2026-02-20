@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
 import node from '@astrojs/node';
+import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   output: 'server',
@@ -9,9 +10,12 @@ export default defineConfig({
     mode: 'standalone',
   }),
   
+  site: process.env.SITE_URL || 'http://localhost:4321',
+  
   integrations: [
     tailwind(),
     react(),
+    sitemap(),
   ],
   
   // Configuración del servidor

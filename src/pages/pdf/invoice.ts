@@ -427,7 +427,27 @@ async function handleInvoiceRequest(context: any) {
 
     // Obtener el pedido con sus items desde order_items
     let order: any = null;
-    const actualOrderId = orderId || sessionId;
+    let actualOrderId = orderId || sessionId;
+
+    // Si el id tiene formato de número de factura (FAC-YYYY-NNNN), buscar primero en invoices
+    if (actualOrderId && /^FAC-\d{4}-\d+$/i.test(actualOrderId)) {
+      console.log('Detected invoice number format, looking up in invoices table:', actualOrderId);
+      const { data: invoice, error: invoiceError } = await adminClient
+        .from('invoices')
+        .select('order_id')
+        .eq('invoice_number', actualOrderId)
+        .single();
+
+      if (invoiceError || !invoice) {
+        console.error('Invoice not found by number:', invoiceError);
+        return new Response(JSON.stringify({ error: 'Invoice not found', details: invoiceError }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      actualOrderId = invoice.order_id;
+      console.log('Resolved invoice to order_id:', actualOrderId);
+    }
 
     if (actualOrderId) {
       const { data: orders, error: orderError } = await adminClient
