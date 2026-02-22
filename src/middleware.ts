@@ -12,10 +12,45 @@ import { createClient } from '@supabase/supabase-js';
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
 
-  // IMPORTANTE: No procesar el middleware para rutas de API
+  // IMPORTANTE: No procesar el middleware para rutas de API públicas
   // para evitar que el body sea consumido
-  if (pathname.startsWith('/api/')) {
-    console.log('🔷 [MIDDLEWARE] Skipping API route:', pathname);
+  // Pero SÍ proteger rutas API de admin
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/admin/')) {
+    return next();
+  }
+
+  // Proteger rutas API de admin (requieren autenticación)
+  if (pathname.startsWith('/api/admin/')) {
+    // Verificar autenticación
+    const accessToken = context.cookies.get('sb-access-token')?.value;
+    if (!accessToken) {
+      return new Response(
+        JSON.stringify({ error: 'No autorizado' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verificar token válido
+    try {
+      const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+      if (supabaseUrl && supabaseAnonKey) {
+        const serverClient = createClient(supabaseUrl, supabaseAnonKey);
+        const { data } = await serverClient.auth.getUser(accessToken);
+        if (!data?.user) {
+          return new Response(
+            JSON.stringify({ error: 'Token inválido' }),
+            { status: 401, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Error de autenticación' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     return next();
   }
 
@@ -58,8 +93,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return next();
   }
 
-  // Rutas de admin requieren autenticación (verificación en cliente también)
+  // Rutas de admin requieren autenticación en servidor
   if (isAdminRoute) {
+    if (!user) {
+      // Sin usuario autenticado → redirigir a /auth con mensaje
+      return context.redirect('/auth?error=unauthorized&message=Debes+iniciar+sesion+para+acceder+al+panel+de+administracion');
+    }
+    // Usuario autenticado → permitir acceso
     return next();
   }
 

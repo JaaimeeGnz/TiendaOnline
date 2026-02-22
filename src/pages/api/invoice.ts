@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { supabaseClient } from '../../lib/supabase';
 
+export const prerender = false;
+
 interface InvoiceData {
   order_id: string;
   customer_email: string;

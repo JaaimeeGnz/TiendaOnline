@@ -663,11 +663,29 @@ export async function sendOrderStatusUpdateEmail(
 
   // Traducir estado
   const statusTranslations: Record<string, { title: string; message: string; icon: string; color: string }> = {
+    paid: {
+      title: "¡Tu pedido ha sido confirmado! 💳",
+      message: "Tu pago ha sido procesado correctamente y tu pedido está siendo preparado en nuestro almacén. Pronto recibirás más información sobre el envío.",
+      icon: "💳",
+      color: "#3b82f6"
+    },
     processing: {
       title: "¡Tu pedido está en proceso! 📦",
       message: "Tu pedido ha sido confirmado y está siendo preparado en nuestro almacén. Pronto recibirás más información sobre el envío.",
       icon: "⚙️",
       color: "#3b82f6"
+    },
+    shipped: {
+      title: "¡Tu pedido ha sido enviado! 🚚",
+      message: "¡Excelente noticia! Tu pedido ha sido despachado y está en camino hacia ti. Puedes esperar la entrega en los próximos días.",
+      icon: "📦",
+      color: "#9333ea"
+    },
+    delivered: {
+      title: "¡Tu pedido ha sido entregado! 🎉",
+      message: "Tu pedido ha llegado a su destino. ¡Esperamos que disfrutes de tu compra! Si tienes algún problema, puedes solicitar una devolución desde tu cuenta.",
+      icon: "✓",
+      color: "#10b981"
     },
     completed: {
       title: "¡Tu pedido ha sido enviado! 🚚",
@@ -722,7 +740,7 @@ export async function sendOrderStatusUpdateEmail(
                 <div style="margin-bottom: 15px;">
                   <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 12px;">ESTADO</p>
                   <p style="margin: 0; color: white; background-color: ${statusInfo.color}; padding: 8px 12px; border-radius: 6px; display: inline-block; font-weight: 600;">
-                    ${status === 'processing' ? 'En Procesamiento' : status === 'completed' ? 'Enviado' : status}
+                    ${status === 'paid' ? 'Pagado' : status === 'shipped' ? 'Enviado' : status === 'delivered' ? 'Entregado' : status === 'processing' ? 'En Procesamiento' : status === 'completed' ? 'Completado' : status}
                   </p>
                 </div>
               </div>

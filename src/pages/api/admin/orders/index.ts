@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { supabaseClient, supabaseServer } from '../../../../lib/supabase';
 
+export const prerender = false;
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
@@ -20,7 +22,7 @@ export const POST: APIRoute = async ({ request }) => {
       }
 
       // Validar que el estado sea válido
-      const validStatuses = ['pending', 'processing', 'completed', 'cancelled'];
+      const validStatuses = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
       if (!validStatuses.includes(status)) {
         return new Response(JSON.stringify({ 
           error: 'Estado de pedido inválido' 

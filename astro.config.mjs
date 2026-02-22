@@ -5,6 +5,8 @@ import node from '@astrojs/node';
 import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
+  // Astro 5 con @astrojs/node requiere output 'server'
+  // Las páginas con export const prerender = true serán SSG (por defecto SSR)
   output: 'server',
   adapter: node({
     mode: 'standalone',

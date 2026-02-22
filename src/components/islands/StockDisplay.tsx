@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react';
-
-interface SizeStock {
-  size: string;
-  stock: number;
-}
+import type { SizeStock } from '../../types';
 
 interface StockDisplayProps {
   productId: string;

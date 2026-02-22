@@ -3,6 +3,7 @@
  * src/pages/login.astro
  * Redirección a /auth para mantener consistencia
  */
+export const prerender = false;
 
 // Redirigir a /auth
 return Astro.redirect('/auth');

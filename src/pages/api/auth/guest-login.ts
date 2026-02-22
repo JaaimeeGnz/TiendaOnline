@@ -5,6 +5,8 @@
 
 import type { APIRoute } from 'astro';
 
+export const prerender = false;
+
 export const POST: APIRoute = async ({ cookies, redirect }) => {
   // Establecer cookie de invitado SIN httpOnly (necesaria para que se envíe correctamente)
   cookies.set('guest-session', 'true', {

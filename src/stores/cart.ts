@@ -1,27 +1,9 @@
 import { atom } from 'nanostores';
 import type { WritableAtom } from 'nanostores';
+import type { CartItem, CartState } from '../types';
 
-/**
- * Estructura de un ítem en el carrito
- */
-export interface CartItem {
-  id: string; // UUID del producto
-  name: string;
-  slug: string;
-  price_cents: number; // Precio en céntimos
-  quantity: number;
-  size?: string;
-  image_url?: string;
-  stock: number;
-}
-
-/**
- * Estructura del estado del carrito
- */
-export interface CartState {
-  items: CartItem[];
-  lastUpdated: number;
-}
+// Re-export para compatibilidad con imports existentes
+export type { CartItem, CartState };
 
 // Clave para localStorage
 const CART_STORAGE_KEY = 'fashionmarket_cart';

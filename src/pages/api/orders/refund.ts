@@ -59,9 +59,9 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    if (order.status !== 'completed') {
+    if (!['completed', 'delivered'].includes(order.status)) {
       return new Response(
-        JSON.stringify({ error: 'Solo se pueden devolver pedidos completados' }),
+        JSON.stringify({ error: 'Solo se pueden devolver pedidos entregados' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }

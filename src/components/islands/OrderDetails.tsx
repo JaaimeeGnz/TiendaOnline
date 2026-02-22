@@ -7,14 +7,19 @@ interface OrderDetailsProps {
 export default function OrderDetails({ status }: OrderDetailsProps) {
     const currentStatus = status.toLowerCase();
 
-    // Estados mapeados a índices:
-    // 0: Pendiente (pending, processing, confirmed)
-    // 1: Enviado (shipped, delivered)
-    // 2: Completado (completed)
+    // Estados mapeados a 4 pasos:
+    // 0: Pendiente (pending)
+    // 1: Pagado (paid)
+    // 2: Enviado (shipped)
+    // 3: Entregado (delivered)
 
     let activeIndex = 0;
-    if (['shipped', 'delivered'].includes(currentStatus)) activeIndex = 1;
-    if (currentStatus === 'completed') activeIndex = 2;
+    if (currentStatus === 'paid') activeIndex = 1;
+    if (currentStatus === 'shipped') activeIndex = 2;
+    if (currentStatus === 'delivered') activeIndex = 3;
+    // Backward compat: old values
+    if (currentStatus === 'processing' || currentStatus === 'confirmed') activeIndex = 1;
+    if (currentStatus === 'completed') activeIndex = 3;
 
     const steps = [
         {
@@ -22,6 +27,14 @@ export default function OrderDetails({ status }: OrderDetailsProps) {
             icon: (
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            )
+        },
+        {
+            label: 'Pagado',
+            icon: (
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
             )
         },
@@ -35,7 +48,7 @@ export default function OrderDetails({ status }: OrderDetailsProps) {
             )
         },
         {
-            label: 'Completado',
+            label: 'Entregado',
             icon: (
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

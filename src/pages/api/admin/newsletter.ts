@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { supabaseServer } from '../../../lib/supabase';
 
+export const prerender = false;
+
 /**
  * Obtiene estadísticas y lista de suscriptores (admin)
  */

@@ -574,6 +574,7 @@ export default function UserOrders() {
     const getStatusBadge = (status: string) => {
         const statusMap: { [key: string]: { color: string; label: string } } = {
             pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pendiente' },
+            paid: { color: 'bg-blue-100 text-blue-800', label: 'Pagado' },
             processing: { color: 'bg-blue-100 text-blue-800', label: 'Procesando' },
             confirmed: { color: 'bg-blue-100 text-blue-800', label: 'Confirmado' },
             shipped: { color: 'bg-purple-100 text-purple-800', label: 'Enviado' },
@@ -804,8 +805,8 @@ export default function UserOrders() {
                                     Descargar Factura
                                 </button>
 
-                                {/* Botón Cancelar Pedido - solo visible si está pendiente */}
-                                {['pending', 'pendiente'].includes(order.status?.toLowerCase().trim() || '') && (
+                                {/* Botón Cancelar Pedido - solo visible si está pendiente o pagado */}
+                                {['pending', 'pendiente', 'paid', 'pagado'].includes(order.status?.toLowerCase().trim() || '') && (
                                     <button
                                         onClick={() => cancelOrder(order.id)}
                                         disabled={cancellingOrderId === order.id}
@@ -827,8 +828,8 @@ export default function UserOrders() {
                                     </button>
                                 )}
 
-                                {/* Botón Solicitar Devolución - solo para pedidos completados SIN devolución previa */}
-                                {['completed', 'completado'].includes(order.status?.toLowerCase().trim() || '') && !refundedOrderIds.has(order.id) && (
+                                {/* Botón Solicitar Devolución - solo para pedidos entregados SIN devolución previa */}
+                                {['delivered', 'entregado', 'completed', 'completado'].includes(order.status?.toLowerCase().trim() || '') && !refundedOrderIds.has(order.id) && (
                                     <button
                                         onClick={() => setRefundModal({ open: true, order })}
                                         disabled={processingRefund}

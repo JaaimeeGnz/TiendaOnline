@@ -66,12 +66,12 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // 3. Solo permitir cancelar pedidos pendientes
-    const isPending = ['pending', 'pendiente'].includes(order.status.toLowerCase().trim());
-    if (!isPending) {
+    // 3. Solo permitir cancelar pedidos pendientes o pagados (no enviados ni entregados)
+    const canCancel = ['pending', 'pendiente', 'paid', 'pagado'].includes(order.status.toLowerCase().trim());
+    if (!canCancel) {
       return new Response(
         JSON.stringify({
-          error: 'Solo se pueden cancelar pedidos en estado pendiente',
+          error: 'Solo se pueden cancelar pedidos en estado pendiente o pagado',
           currentStatus: order.status
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
@@ -80,24 +80,36 @@ export const POST: APIRoute = async ({ request }) => {
 
     // 4. Restaurar stock por talla para cada item del pedido
     const items = order.items || [];
+    // 4. Restaurar stock por talla de forma atómica usando stored procedure
     for (const item of items) {
       if (item.product_id && item.size) {
-        const { data: sizeData } = await supabase
-          .from('product_sizes')
-          .select('id, stock')
-          .eq('product_id', item.product_id)
-          .eq('size', item.size)
-          .single();
+        const { data: result, error: rpcError } = await supabase
+          .rpc('increment_stock', {
+            p_product_id: item.product_id,
+            p_size: item.size,
+            p_quantity: item.quantity || 1,
+          });
 
-        if (sizeData) {
-          const newStock = sizeData.stock + (item.quantity || 1);
-          await supabase
+        if (rpcError) {
+          // Fallback: actualización directa si la RPC no está disponible
+          console.warn('RPC increment_stock no disponible, fallback directo:', rpcError.message);
+          const { data: sizeData } = await supabase
             .from('product_sizes')
-            .update({ stock: newStock, updated_at: new Date().toISOString() })
-            .eq('id', sizeData.id);
+            .select('id, stock')
+            .eq('product_id', item.product_id)
+            .eq('size', item.size)
+            .single();
 
-          console.log(`✅ Stock restaurado: producto ${item.product_id}, talla ${item.size}, +${item.quantity || 1} (nuevo: ${newStock})`);
+          if (sizeData) {
+            const newStock = sizeData.stock + (item.quantity || 1);
+            await supabase
+              .from('product_sizes')
+              .update({ stock: newStock, updated_at: new Date().toISOString() })
+              .eq('id', sizeData.id);
+          }
         }
+
+        console.log(`✅ Stock restaurado: producto ${item.product_id}, talla ${item.size}, +${item.quantity || 1}`);
       }
     }
 

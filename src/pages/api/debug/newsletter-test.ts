@@ -2,6 +2,8 @@ import type { APIRoute } from 'astro';
 import { subscribeToNewsletter } from '../../../lib/newsletter';
 import { sendNewsletterWelcomeEmail } from '../../../lib/email';
 
+export const prerender = false;
+
 /**
  * Endpoint de prueba para diagnosticar problemas con el newsletter
  */

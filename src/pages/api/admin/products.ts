@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { supabaseClient } from '../../../lib/supabase';
 
+export const prerender = false;
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     // Verificar autenticación (esto debe validarse con tu sesión)

@@ -31,8 +31,9 @@ export default function OrdersManager() {
             return;
           }
 
-          const statusText = newStatus === 'processing' ? 'procesamiento' : 
-                            newStatus === 'completed' ? 'entregado' : 'pendiente';
+          const statusText = newStatus === 'paid' ? 'pagado' : 
+                            newStatus === 'shipped' ? 'enviado' :
+                            newStatus === 'delivered' ? 'entregado' : 'pendiente';
           
           showSuccessModal(`Pedido marcado como ${statusText}`).then(() => {
             window.location.reload();

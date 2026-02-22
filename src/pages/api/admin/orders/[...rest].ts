@@ -2,6 +2,8 @@ import type { APIRoute } from 'astro';
 import { supabaseClient } from '../../../../lib/supabase';
 import { sendOrderStatusUpdateEmail } from '../../../../lib/email';
 
+export const prerender = false;
+
 export const POST: APIRoute = async ({ request, params }) => {
   try {
     // Obtener la ruta
@@ -25,7 +27,7 @@ export const POST: APIRoute = async ({ request, params }) => {
       }
 
       // Validar que el estado sea válido
-      const validStatuses = ['pending', 'processing', 'completed', 'cancelled'];
+      const validStatuses = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
       if (!validStatuses.includes(status)) {
         return new Response(JSON.stringify({ 
           error: 'Estado de pedido inválido' 
@@ -64,8 +66,8 @@ export const POST: APIRoute = async ({ request, params }) => {
 
       console.log('✅ Pedido actualizado:', data[0].id);
 
-      // Enviar correo de actualización de estado si es processing o completed
-      if (['processing', 'completed'].includes(status)) {
+      // Enviar correo de actualización de estado si hay cambio relevante
+      if (['paid', 'shipped', 'delivered'].includes(status)) {
         try {
           console.log('📧 Preparando email de actualización de estado...');
           

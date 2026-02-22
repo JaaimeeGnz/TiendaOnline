@@ -1,17 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  price_cents: number;
-  original_price_cents?: number;
-  stock: number;
-  featured: boolean;
-  brand?: string;
-  images?: string[];
-  created_at?: string | Date;
-}
+import type { Product } from '../../types';
 
 interface ProductCardProps {
   product: Product;

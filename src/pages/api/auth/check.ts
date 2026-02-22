@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { getSession } from '../../../lib/supabase';
 
+export const prerender = false;
+
 export const GET: APIRoute = async ({ request, redirect }) => {
   try {
     const session = await getSession();

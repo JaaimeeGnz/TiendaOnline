@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { getDashboardStats } from '../../lib/dashboardStats';
+import type { DashboardStats } from '../../types';
 
-interface DashboardStats {
-  totalSalesMonth: number;
-  pendingOrders: number;
-  topProduct: { name: string; sold: number } | null;
-  salesLast7Days: Array<{ date: string; sales: number }>;
-}
+const COLORS = ['#00b4d8', '#e63946', '#f4a261', '#2a9d8f', '#264653', '#e76f51'];
 
 export default function DashboardAnalytics() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -102,32 +99,111 @@ export default function DashboardAnalytics() {
         </a>
       </div>
 
-      {/* Simple Bar Chart for Last 7 Days */}
+      {/* Recharts Bar Chart for Last 7 Days */}
       <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
         <h3 className="text-lg font-bold text-jd-black mb-6">Ventas - Últimos 7 Días</h3>
         
         {stats.salesLast7Days.length > 0 ? (
-          <div className="space-y-4">
-            {stats.salesLast7Days.map((day) => (
-              <div key={day.date} className="flex items-center gap-4">
-                <div className="w-24 text-sm font-semibold text-gray-600">{day.date}</div>
-                <div className="flex-1 h-8 bg-gray-100 rounded-lg overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-jd-turquoise to-jd-turquoise transition-all duration-300"
-                    style={{
-                      width: `${(day.sales / (Math.max(...stats.salesLast7Days.map(d => d.sales)) || 1)) * 100}%`,
-                    }}
-                  ></div>
-                </div>
-                <div className="w-16 text-right font-bold text-jd-turquoise">{day.sales.toFixed(2)}€</div>
-              </div>
-            ))}
-          </div>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={stats.salesLast7Days} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 600 }}
+                axisLine={{ stroke: '#e5e7eb' }}
+              />
+              <YAxis 
+                tick={{ fill: '#6b7280', fontSize: 12 }}
+                axisLine={{ stroke: '#e5e7eb' }}
+                tickFormatter={(v) => `${v}€`}
+              />
+              <Tooltip
+                formatter={(value: any) => [`${Number(value).toFixed(2)}€`, 'Ventas']}
+                contentStyle={{
+                  backgroundColor: '#1a1a1a',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                }}
+                cursor={{ fill: 'rgba(0,180,216,0.1)' }}
+              />
+              <Bar 
+                dataKey="sales" 
+                fill="#00b4d8" 
+                radius={[6, 6, 0, 0]}
+                maxBarSize={60}
+              />
+            </BarChart>
+          </ResponsiveContainer>
         ) : (
           <div className="text-center py-8 text-gray-500">
             <p>No hay datos de ventas en los últimos 7 días</p>
           </div>
         )}
+      </div>
+
+      {/* KPI Summary Pie Chart */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-bold text-jd-black mb-4">Distribución de Ventas</h3>
+          {stats.salesLast7Days.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={stats.salesLast7Days.filter(d => d.sales > 0)}
+                  dataKey="sales"
+                  nameKey="date"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={90}
+                  innerRadius={50}
+                  label={({ name, value }: any) => `${name}: ${Number(value).toFixed(0)}€`}
+                  labelLine={false}
+                >
+                  {stats.salesLast7Days.filter(d => d.sales > 0).map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: any) => [`${Number(value).toFixed(2)}€`, 'Ventas']}
+                  contentStyle={{
+                    backgroundColor: '#1a1a1a',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#fff',
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>Sin datos</p>
+            </div>
+          )}
+        </div>
+
+        {/* Top Product */}
+        <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-bold text-jd-black mb-4">Producto Más Vendido</h3>
+          {stats.topProduct ? (
+            <div className="flex flex-col items-center justify-center h-[250px]">
+              <div className="w-20 h-20 bg-jd-turquoise bg-opacity-10 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-10 h-10 text-jd-turquoise" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+              </div>
+              <p className="text-xl font-black text-jd-black text-center">{stats.topProduct.name}</p>
+              <p className="text-4xl font-black text-jd-turquoise mt-2">{stats.topProduct.sold}</p>
+              <p className="text-sm text-gray-500">unidades vendidas</p>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-[250px] text-gray-500">
+              <p>Sin datos de ventas</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

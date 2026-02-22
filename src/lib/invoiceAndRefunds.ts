@@ -1,43 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Invoice, Refund } from '../types';
+
+// Re-export para compatibilidad con imports existentes
+export type { Invoice, Refund };
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
-
-export interface Invoice {
-  id: string;
-  invoice_number: string;
-  order_id: string;
-  customer_email: string;
-  customer_name: string;
-  type: 'invoice' | 'credit_note';
-  subtotal_cents: number;
-  tax_cents: number;
-  total_cents: number;
-  status: 'draft' | 'issued' | 'paid' | 'cancelled';
-  issued_at: string;
-  due_date?: string;
-  items: any[];
-  reference_invoice_id?: string;
-  reason?: string;
-}
-
-export interface Refund {
-  id: string;
-  order_id: string;
-  invoice_id: string;
-  customer_email: string;
-  customer_name: string;
-  reason: string;
-  status: 'pending' | 'approved' | 'rejected' | 'processed';
-  refund_amount_cents: number;
-  returned_items: any[];
-  refund_method: 'original_payment' | 'store_credit';
-  requested_at: string;
-  processed_at?: string;
-  refund_date?: string;
-  credit_note_id?: string;
-}
 
 /**
  * Crea una factura para una orden

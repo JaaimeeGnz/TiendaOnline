@@ -3,6 +3,7 @@
  * src/pages/admin/productos/fotos-masivo.astro
  * Página para agregar fotos a múltiples productos a la vez
  */
+export const prerender = false;
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { supabaseClient } from '../../../lib/supabase';

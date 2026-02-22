@@ -2,6 +2,8 @@ import type { APIRoute } from 'astro';
 import { supabaseClient as supabase } from '../../../lib/supabase';
 import { sendNewsletterPromotion } from '../../../lib/email';
 
+export const prerender = false;
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     // Validar método

@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { supabaseClient } from '../../../lib/supabase';
 
+export const prerender = false;
+
 export const POST: APIRoute = async (context) => {
   try {
     // Hacer signOut para limpiar la sesión en Supabase

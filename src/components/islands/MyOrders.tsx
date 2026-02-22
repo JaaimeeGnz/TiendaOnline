@@ -111,6 +111,7 @@ export default function MyOrders() {
   const getStatusBadge = (status: string) => {
     const statusMap: { [key: string]: { color: string; label: string } } = {
       pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pendiente' },
+      paid: { color: 'bg-blue-100 text-blue-800', label: 'Pagado' },
       processing: { color: 'bg-blue-100 text-blue-800', label: 'Procesando' },
       confirmed: { color: 'bg-blue-100 text-blue-800', label: 'Confirmado' },
       shipped: { color: 'bg-purple-100 text-purple-800', label: 'Enviado' },

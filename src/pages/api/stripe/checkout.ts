@@ -13,9 +13,17 @@ const supabase = createClient(
   import.meta.env.PUBLIC_SUPABASE_ANON_KEY
 );
 
+// Cliente con service_role para operaciones atómicas de stock
+const supabaseAdmin = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.SUPABASE_SERVICE_ROLE_KEY || import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
 export const POST: APIRoute = async (context) => {
+  let body: any = null;
   try {
-    const body = await context.request.json();
+    body = await context.request.json();
     const { items, userId, email } = body;
 
     // Token es OPCIONAL - solo requerido si userId está presente
@@ -55,6 +63,69 @@ export const POST: APIRoute = async (context) => {
         JSON.stringify({ error: 'No items in cart' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    // ====== VERIFICACIÓN Y DECREMENTO ATÓMICO DE STOCK ======
+    // Preparar items para la función atómica process_checkout_stock
+    const stockItems = items
+      .filter((item: any) => item.id && item.size)
+      .map((item: any) => ({
+        product_id: item.id,
+        size: item.size,
+        quantity: item.quantity || 1,
+      }));
+
+    if (stockItems.length > 0) {
+      // Usar RPC para decrementar stock atómicamente (con SELECT ... FOR UPDATE)
+      const { data: stockResult, error: stockError } = await supabaseAdmin
+        .rpc('process_checkout_stock', {
+          p_items: JSON.stringify(stockItems),
+        });
+
+      if (stockError) {
+        console.error('❌ Error en process_checkout_stock RPC:', stockError);
+        // Fallback: verificar y decrementar uno por uno
+        for (const stockItem of stockItems) {
+          const { data: decrementOk, error: decError } = await supabaseAdmin
+            .rpc('decrement_stock', {
+              p_product_id: stockItem.product_id,
+              p_size: stockItem.size,
+              p_quantity: stockItem.quantity,
+            });
+
+          if (decError || decrementOk === false) {
+            // Restaurar stock de los items ya decrementados
+            const itemIndex = stockItems.indexOf(stockItem);
+            for (let i = 0; i < itemIndex; i++) {
+              await supabaseAdmin.rpc('increment_stock', {
+                p_product_id: stockItems[i].product_id,
+                p_size: stockItems[i].size,
+                p_quantity: stockItems[i].quantity,
+              });
+            }
+            return new Response(
+              JSON.stringify({ 
+                error: `Sin stock suficiente para la talla ${stockItem.size}. Actualiza tu carrito.` 
+              }),
+              { status: 409, headers: { 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+        console.log('✅ Stock decrementado correctamente (fallback individual)');
+      } else {
+        // Verificar resultado de la función atómica
+        const result = typeof stockResult === 'string' ? JSON.parse(stockResult) : stockResult;
+        if (!result?.success) {
+          console.error('❌ Stock insuficiente:', result?.error);
+          return new Response(
+            JSON.stringify({ 
+              error: result?.error || 'Stock insuficiente para uno o más productos' 
+            }),
+            { status: 409, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+        console.log('✅ Stock decrementado atómicamente:', result);
+      }
     }
 
     // Calcular totales (redondear a enteros para evitar decimales)
@@ -196,6 +267,23 @@ export const POST: APIRoute = async (context) => {
     );
   } catch (error: any) {
     console.error('Stripe checkout error:', error);
+
+    // Restaurar stock si ya se decrementó y hubo error
+    if (body?.items) {
+      const restoreItems = body.items.filter((item: any) => item.id && item.size);
+      for (const item of restoreItems) {
+        try {
+          await supabaseAdmin.rpc('increment_stock', {
+            p_product_id: item.id,
+            p_size: item.size,
+            p_quantity: item.quantity || 1,
+          });
+        } catch (restoreErr) {
+          console.error('Error restaurando stock:', restoreErr);
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({ error: error.message || 'Error creating checkout session' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

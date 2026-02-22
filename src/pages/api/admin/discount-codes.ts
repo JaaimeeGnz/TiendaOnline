@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { supabaseServer } from '../../../lib/supabase';
 
+export const prerender = false;
+
 /**
  * Crea un nuevo código de descuento (admin)
  */

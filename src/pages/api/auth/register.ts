@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
 
+export const prerender = false;
+
 export const POST: APIRoute = async ({ request }) => {
   // Esta ruta está disponible pero el registro ahora se maneja desde el cliente
   return new Response(

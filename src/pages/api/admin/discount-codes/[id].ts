@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { supabaseServer } from '../../../../lib/supabase';
 
+export const prerender = false;
+
 /**
  * Actualiza o desactiva un código de descuento (admin)
  */

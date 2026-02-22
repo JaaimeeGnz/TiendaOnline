@@ -55,6 +55,21 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
             access_token: data.session.access_token,
             user: data.user
           }));
+
+          // Establecer cookie httpOnly en el servidor para el middleware SSR
+          try {
+            await fetch('/api/auth/set-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                accessToken: data.session.access_token,
+                refreshToken: data.session.refresh_token
+              })
+            });
+            console.log('Cookie de sesión establecida en servidor');
+          } catch (cookieErr) {
+            console.warn('Error estableciendo cookie de sesión:', cookieErr);
+          }
         } else {
           console.warn('⚠️ No hay access_token en la sesión');
           // Guardar al menos el user_id como fallback
@@ -192,6 +207,20 @@ export default function AuthForm({ initialTab = 'login' }: AuthFormProps) {
               access_token: signInData.session.access_token,
               user: signInData.user
             }));
+
+            // Establecer cookie httpOnly en el servidor para el middleware SSR
+            try {
+              await fetch('/api/auth/set-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  accessToken: signInData.session.access_token,
+                  refreshToken: signInData.session.refresh_token
+                })
+              });
+            } catch (cookieErr) {
+              console.warn('Error estableciendo cookie de sesión:', cookieErr);
+            }
           } else {
             // Guardar al menos el user_id como fallback
             sessionStorage.setItem('userId', signInData.user?.id || '');

@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { generateUploadSignature } from '../../../lib/cloudinary';
 
+export const prerender = false;
+
 export const GET: APIRoute = async ({ request }) => {
   try {
     console.log('[API] Generando firma de Cloudinary...');

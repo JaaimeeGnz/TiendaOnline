@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { supabaseClient } from '../../../lib/supabase';
 
@@ -22,12 +24,13 @@ if (error) {
 
 console.log('📊 Pedidos obtenidos:', orders?.map(o => ({ id: o.id, status: o.status })));
 
-// Agrupar pedidos por estado
+// Agrupar pedidos por estado (4 estados: pending → paid → shipped → delivered)
 const pendingOrders = orders?.filter(o => o.status === 'pending') || [];
-const processingOrders = orders?.filter(o => o.status === 'processing') || [];
-const completedOrders = orders?.filter(o => o.status === 'completed') || [];
+const paidOrders = orders?.filter(o => o.status === 'paid') || [];
+const shippedOrders = orders?.filter(o => o.status === 'shipped') || [];
+const deliveredOrders = orders?.filter(o => o.status === 'delivered') || [];
 
-console.log('📋 Pendientes:', pendingOrders.length, 'Procesamiento:', processingOrders.length, 'Completados:', completedOrders.length);
+console.log('📋 Pendientes:', pendingOrders.length, 'Pagados:', paidOrders.length, 'Enviados:', shippedOrders.length, 'Entregados:', deliveredOrders.length);
 
 // Función para formatear fecha
 const formatDate = (dateString: string) => {
@@ -96,13 +99,9 @@ const formatDate = (dateString: string) => {
                           class="order-status-message flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-jd-turquoise hover:border-jd-turquoise transition"
                         >
                           <option value="">-- Selecciona un mensaje --</option>
-                          <option value="confirmed">Pedido confirmado. Tu paquete está siendo preparado en nuestro almacén.</option>
-                          <option value="preparing">Tu pedido está siendo preparado. Se enviará en los próximos 1-2 días.</option>
-                          <option value="ready">Tu paquete está listo para enviar. Pronto tendrás tu número de seguimiento.</option>
-                          <option value="shipped">¡Tu pedido está en camino! Pronto llegará a tu casa. Úsalo para rastrear tu envío.</option>
-                          <option value="out_for_delivery">¡Tu paquete está fuera para entrega! Deberías recibirlo hoy.</option>
-                          <option value="quality_check">Tu pedido está en control de calidad. Nos aseguraremos que todo sea perfecto.</option>
-                          <option value="warehouse">Preparándose en almacén. Tu pedido será empaquetado pronto.</option>
+                          <option value="received">Hemos recibido tu pedido. Estamos verificando el pago.</option>
+                          <option value="pending_payment">Tu pedido esta pendiente de pago. Completa el pago para procesarlo.</option>
+                          <option value="reviewing">Estamos revisando los detalles de tu pedido. Te notificaremos pronto.</option>
                           <option value="custom">Mensaje personalizado</option>
                         </select>
                         <button
@@ -110,7 +109,7 @@ const formatDate = (dateString: string) => {
                           data-order-id={order.id}
                           class="save-message-btn px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 active:scale-95 transition text-sm whitespace-nowrap"
                         >
-                          💾 Guardar
+                          Guardar
                         </button>
                       </div>
                     </div>
@@ -119,10 +118,10 @@ const formatDate = (dateString: string) => {
                     <button 
                       type="button"
                       data-order-id={order.id}
-                      data-status="processing"
+                      data-status="paid"
                       class="update-status-btn px-4 py-2 bg-jd-turquoise text-white font-bold rounded-lg hover:bg-jd-turquoise/90 active:scale-95 transition text-sm whitespace-nowrap"
                     >
-                      Confirmar
+                      Marcar Pagado
                     </button>
                     <button 
                       type="button"
@@ -131,7 +130,7 @@ const formatDate = (dateString: string) => {
                       data-order-total={(order.total_cents / 100).toFixed(2)}
                       class="delete-order-btn px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 active:scale-95 transition text-sm whitespace-nowrap"
                     >
-                      🗑️ Eliminar
+                      Eliminar
                     </button>
                   </div>
                 </div>
@@ -142,25 +141,25 @@ const formatDate = (dateString: string) => {
       </div>
     </div>
 
-    <!-- Pedidos en Procesamiento -->
-    <div class="bg-white rounded-lg border-2 border-jd-turquoise">
-      <div class="px-6 py-4 bg-jd-turquoise bg-opacity-5 border-b-2 border-jd-turquoise">
+    <!-- Pedidos Pagados -->
+    <div class="bg-white rounded-lg border-2 border-blue-500">
+      <div class="px-6 py-4 bg-blue-50 border-b-2 border-blue-500">
         <h2 class="text-2xl font-bold text-jd-black">
-          En Procesamiento ({processingOrders.length})
+          Pagados ({paidOrders.length})
         </h2>
       </div>
       <div class="p-6">
-        {processingOrders.length === 0 ? (
-          <p class="text-gray-500 text-center py-8">No hay pedidos en procesamiento</p>
+        {paidOrders.length === 0 ? (
+          <p class="text-gray-500 text-center py-8">No hay pedidos pagados</p>
         ) : (
           <div class="space-y-4">
-            {processingOrders.map((order) => (
+            {paidOrders.map((order) => (
               <div key={order.id} class="border-2 border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                 <div class="flex items-start justify-between">
                   <div class="flex-1">
                     <div class="flex items-center gap-3 mb-3">
                       <p class="text-sm font-bold text-gray-600">Pedido #{order.id.slice(0, 8).toUpperCase()}</p>
-                      <span class="px-3 py-1 bg-jd-turquoise bg-opacity-10 text-jd-turquoise text-xs font-bold rounded-full">EN PROCESAMIENTO</span>
+                      <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">PAGADO</span>
                     </div>
                     <p class="text-sm text-gray-600 mb-2">
                       <span class="font-semibold">Total:</span> {(order.total_cents / 100).toFixed(2)}€
@@ -181,13 +180,10 @@ const formatDate = (dateString: string) => {
                           class="order-status-message flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-jd-turquoise hover:border-jd-turquoise transition"
                         >
                           <option value="">-- Selecciona un mensaje --</option>
-                          <option value="confirmed">Pedido confirmado. Tu paquete está siendo preparado en nuestro almacén.</option>
-                          <option value="preparing">Tu pedido está siendo preparado. Se enviará en los próximos 1-2 días.</option>
-                          <option value="ready">Tu paquete está listo para enviar. Pronto tendrás tu número de seguimiento.</option>
-                          <option value="shipped">¡Tu pedido está en camino! Pronto llegará a tu casa. Úsalo para rastrear tu envío.</option>
-                          <option value="out_for_delivery">¡Tu paquete está fuera para entrega! Deberías recibirlo hoy.</option>
-                          <option value="quality_check">Tu pedido está en control de calidad. Nos aseguraremos que todo sea perfecto.</option>
-                          <option value="warehouse">Preparándose en almacén. Tu pedido será empaquetado pronto.</option>
+                          <option value="confirmed">Pago confirmado. Tu pedido esta siendo preparado en nuestro almacen.</option>
+                          <option value="preparing">Tu pedido esta siendo preparado. Se enviara en los proximos 1-2 dias.</option>
+                          <option value="ready">Tu paquete esta listo para enviar. Pronto tendras tu numero de seguimiento.</option>
+                          <option value="quality_check">Tu pedido esta en control de calidad. Nos aseguraremos que todo sea perfecto.</option>
                           <option value="custom">Mensaje personalizado</option>
                         </select>
                         <button
@@ -195,7 +191,7 @@ const formatDate = (dateString: string) => {
                           data-order-id={order.id}
                           class="save-message-btn px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 active:scale-95 transition text-sm whitespace-nowrap"
                         >
-                          💾 Guardar
+                          Guardar
                         </button>
                       </div>
                     </div>
@@ -204,10 +200,10 @@ const formatDate = (dateString: string) => {
                     <button 
                       type="button"
                       data-order-id={order.id}
-                      data-status="completed"
-                      class="update-status-btn px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 active:scale-95 transition text-sm whitespace-nowrap"
+                      data-status="shipped"
+                      class="update-status-btn px-4 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 active:scale-95 transition text-sm whitespace-nowrap"
                     >
-                      Entregado
+                      Marcar Enviado
                     </button>
                     <button 
                       type="button"
@@ -224,7 +220,7 @@ const formatDate = (dateString: string) => {
                       data-order-total={(order.total_cents / 100).toFixed(2)}
                       class="delete-order-btn px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 active:scale-95 transition text-sm whitespace-nowrap"
                     >
-                      🗑️ Eliminar
+                      Eliminar
                     </button>
                   </div>
                 </div>
@@ -235,25 +231,106 @@ const formatDate = (dateString: string) => {
       </div>
     </div>
 
-    <!-- Pedidos Completados -->
-    <div class="bg-white rounded-lg border-2 border-green-600">
-      <div class="px-6 py-4 bg-green-50 border-b-2 border-green-600">
+    <!-- Pedidos Enviados -->
+    <div class="bg-white rounded-lg border-2 border-purple-500">
+      <div class="px-6 py-4 bg-purple-50 border-b-2 border-purple-500">
         <h2 class="text-2xl font-bold text-jd-black">
-          Completados ({completedOrders.length})
+          Enviados ({shippedOrders.length})
         </h2>
       </div>
       <div class="p-6">
-        {completedOrders.length === 0 ? (
-          <p class="text-gray-500 text-center py-8">No hay pedidos completados</p>
+        {shippedOrders.length === 0 ? (
+          <p class="text-gray-500 text-center py-8">No hay pedidos enviados</p>
         ) : (
           <div class="space-y-4">
-            {completedOrders.map((order) => (
+            {shippedOrders.map((order) => (
               <div key={order.id} class="border-2 border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                 <div class="flex items-start justify-between">
                   <div class="flex-1">
                     <div class="flex items-center gap-3 mb-3">
                       <p class="text-sm font-bold text-gray-600">Pedido #{order.id.slice(0, 8).toUpperCase()}</p>
-                      <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">COMPLETADO</span>
+                      <span class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full">ENVIADO</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">
+                      <span class="font-semibold">Total:</span> {(order.total_cents / 100).toFixed(2)}€
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      <span class="font-semibold">Fecha:</span> {formatDate(order.created_at)}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                      <span class="font-semibold">Número:</span> {order.order_number}
+                    </p>
+                    
+                    {/* Selector de mensajes de estado */}
+                    <div class="mt-4 pt-4 border-t-2 border-gray-100">
+                      <label class="block text-xs font-semibold text-gray-700 mb-2">Mensaje al Cliente:</label>
+                      <div class="flex gap-2">
+                        <select 
+                          data-order-id={order.id}
+                          class="order-status-message flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-purple-500 hover:border-purple-500 transition"
+                        >
+                          <option value="">-- Selecciona un mensaje --</option>
+                          <option value="shipped">Tu pedido esta en camino. Llegara en los proximos dias.</option>
+                          <option value="tracking">Tu paquete ya tiene numero de seguimiento. Consulta tu email para rastrearlo.</option>
+                          <option value="out_for_delivery">Tu paquete esta en reparto. Deberias recibirlo hoy.</option>
+                          <option value="delay">Tu envio tiene un pequeno retraso. Disculpa las molestias, llegara pronto.</option>
+                          <option value="custom">Mensaje personalizado</option>
+                        </select>
+                        <button
+                          type="button"
+                          data-order-id={order.id}
+                          class="save-message-btn px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 active:scale-95 transition text-sm whitespace-nowrap"
+                        >
+                          Guardar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex gap-2">
+                    <button 
+                      type="button"
+                      data-order-id={order.id}
+                      data-status="delivered"
+                      class="update-status-btn px-4 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 active:scale-95 transition text-sm whitespace-nowrap"
+                    >
+                      Marcar Entregado
+                    </button>
+                    <button 
+                      type="button"
+                      data-order-id={order.id}
+                      data-status="paid"
+                      class="update-status-btn px-4 py-2 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-700 active:scale-95 transition text-sm whitespace-nowrap"
+                    >
+                      Atrás
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+
+    <!-- Pedidos Entregados -->
+    <div class="bg-white rounded-lg border-2 border-green-600">
+      <div class="px-6 py-4 bg-green-50 border-b-2 border-green-600">
+        <h2 class="text-2xl font-bold text-jd-black">
+          Entregados ({deliveredOrders.length})
+        </h2>
+      </div>
+      <div class="p-6">
+        {deliveredOrders.length === 0 ? (
+          <p class="text-gray-500 text-center py-8">No hay pedidos entregados</p>
+        ) : (
+          <div class="space-y-4">
+            {deliveredOrders.map((order) => (
+              <div key={order.id} class="border-2 border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-3">
+                      <p class="text-sm font-bold text-gray-600">Pedido #{order.id.slice(0, 8).toUpperCase()}</p>
+                      <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">ENTREGADO</span>
                     </div>
                     <p class="text-sm text-gray-600 mb-2">
                       <span class="font-semibold">Total:</span> {(order.total_cents / 100).toFixed(2)}€
@@ -274,13 +351,10 @@ const formatDate = (dateString: string) => {
                           class="order-status-message flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-600 hover:border-green-600 transition"
                         >
                           <option value="">-- Selecciona un mensaje --</option>
-                          <option value="confirmed">Pedido confirmado. Tu paquete está siendo preparado en nuestro almacén.</option>
-                          <option value="preparing">Tu pedido está siendo preparado. Se enviará en los próximos 1-2 días.</option>
-                          <option value="ready">Tu paquete está listo para enviar. Pronto tendrás tu número de seguimiento.</option>
-                          <option value="shipped">¡Tu pedido está en camino! Pronto llegará a tu casa. Úsalo para rastrear tu envío.</option>
-                          <option value="out_for_delivery">¡Tu paquete está fuera para entrega! Deberías recibirlo hoy.</option>
-                          <option value="quality_check">Tu pedido está en control de calidad. Nos aseguraremos que todo sea perfecto.</option>
-                          <option value="warehouse">Preparándose en almacén. Tu pedido será empaquetado pronto.</option>
+                          <option value="delivered">Tu pedido ha sido entregado. Esperamos que disfrutes tu compra.</option>
+                          <option value="thanks">Gracias por tu compra. Esperamos verte de nuevo pronto.</option>
+                          <option value="feedback">Nos encantaria saber tu opinion. Dejanos una valoracion de tu pedido.</option>
+                          <option value="issue">Lamentamos si hubo algun problema. Contacta con nosotros y lo solucionamos.</option>
                           <option value="custom">Mensaje personalizado</option>
                         </select>
                         <button
@@ -288,7 +362,7 @@ const formatDate = (dateString: string) => {
                           data-order-id={order.id}
                           class="save-message-btn px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 active:scale-95 transition text-sm whitespace-nowrap"
                         >
-                          💾 Guardar
+                          Guardar
                         </button>
                       </div>
                     </div>
@@ -297,10 +371,10 @@ const formatDate = (dateString: string) => {
                     <button 
                       type="button"
                       data-order-id={order.id}
-                      data-status="processing"
+                      data-status="shipped"
                       class="update-status-btn px-4 py-2 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-700 active:scale-95 transition text-sm whitespace-nowrap"
                     >
-                      Atrás
+                      Atras
                     </button>
                     <button 
                       type="button"
@@ -309,7 +383,7 @@ const formatDate = (dateString: string) => {
                       data-order-total={(order.total_cents / 100).toFixed(2)}
                       class="delete-order-btn px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 active:scale-95 transition text-sm whitespace-nowrap"
                     >
-                      🗑️ Eliminar
+                      Eliminar
                     </button>
                   </div>
                 </div>
@@ -380,8 +454,9 @@ const formatDate = (dateString: string) => {
               return;
             }
 
-            const statusText = clickedStatus === 'processing' ? 'procesamiento' : 
-                              clickedStatus === 'completed' ? 'entregado' : 'pendiente';
+            const statusText = clickedStatus === 'paid' ? 'pagado' : 
+                              clickedStatus === 'shipped' ? 'enviado' :
+                              clickedStatus === 'delivered' ? 'entregado' : 'pendiente';
             
             await showSuccessModal(`Pedido marcado como ${statusText}${message ? '. Mensaje enviado al cliente.' : ''}`);
             window.location.reload();
@@ -544,7 +619,7 @@ const formatDate = (dateString: string) => {
               Cancelar
             </button>
             <button id="confirm-delete-btn" class="flex-1 px-6 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 active:scale-95 transition text-sm">
-              🗑️ Sí, eliminar
+              Si, eliminar
             </button>
           </div>
         `;
@@ -585,7 +660,7 @@ const formatDate = (dateString: string) => {
     function setupDeleteButtons() {
       console.log('⚙️ Configurando botones de eliminar pedido');
       const deleteButtons = document.querySelectorAll('.delete-order-btn');
-      console.log('🗑️ Botones de eliminar encontrados:', deleteButtons.length);
+      console.log('Botones de eliminar encontrados:', deleteButtons.length);
 
       deleteButtons.forEach((btn) => {
         btn.addEventListener('click', async (e) => {
@@ -602,7 +677,7 @@ const formatDate = (dateString: string) => {
           
           // Deshabilitar botón mientras se procesa
           btn.disabled = true;
-          btn.textContent = '⏳ Eliminando...';
+          btn.textContent = 'Eliminando...';
           
           try {
             const payload = { 
@@ -625,7 +700,7 @@ const formatDate = (dateString: string) => {
             if (!response.ok) {
               showErrorModal(responseData.error || 'Error al eliminar el pedido');
               btn.disabled = false;
-              btn.textContent = '🗑️ Eliminar';
+              btn.textContent = 'Eliminar';
               return;
             }
 
@@ -634,8 +709,8 @@ const formatDate = (dateString: string) => {
           } catch (error) {
             showErrorModal('Error al eliminar el pedido');
             btn.disabled = false;
-            btn.textContent = '🗑️ Eliminar';
-            console.error('❌ Error:', error);
+            btn.textContent = 'Eliminar';
+            console.error('Error:', error);
           }
         });
       });

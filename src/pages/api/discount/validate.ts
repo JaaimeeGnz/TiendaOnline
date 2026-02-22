@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { validateDiscountCode } from '../../../lib/newsletter';
 
+export const prerender = false;
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     if (request.method !== 'POST') {
